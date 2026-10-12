@@ -1,0 +1,24 @@
+
+ ▐▛███▛█   Claude Code v2.1.296
+▝▜██████▀  Opus 5.5 · API Usage Billing
+ ▝▝   ▝▝   ~/.treehouse/demo-428d51/1/demo
+
+
+❯ : Firstmate operational input waiting: read
+  '/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-lab.rk7BBx/state
+  /operational-inbox/1791774294-6e291ae54bd15fc9.msg' and handle its contents
+  as Firstmate operational input.
+
+
+
+
+
+
+
+
+✻ 401 invalid x-api-key · Retrying in 5s · attempt 5/10
+  tmux detected · scroll with PgUp/PgDn · or add 'set -g mouse on' to ~/.tmux…
+────────────────────────────────────────────────────────────────────────────────
+❯ 
+────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ bypass permissions on (shift+tab to cycle) · esc to interrupt · ← for ag…

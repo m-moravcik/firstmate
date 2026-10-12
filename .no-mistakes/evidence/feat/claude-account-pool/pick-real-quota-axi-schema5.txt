@@ -1,0 +1,23 @@
+## config/claude-account (lab home):
+ordinary
+/Users/moravcikmi/.claude-work
+/Users/moravcikmi/.claude-monivio
+
+## quota-axi 0.1.55
+
+$ bin/fm-claude-account.sh pick
+lane: ordinary accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+lane: /Users/moravcikmi/.claude-work accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+lane: /Users/moravcikmi/.claude-monivio accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+basis: UNMEASURED DEFAULT: no account is measurably eligible (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes), so the first unmeasured line in config/claude-account is used without quota evidence
+account: ordinary
+[exit 0]
+
+$ bin/fm-claude-account.sh pick --model opus
+lane: ordinary accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+lane: /Users/moravcikmi/.claude-work accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+lane: /Users/moravcikmi/.claude-monivio accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes)
+basis: UNMEASURED DEFAULT: no account is measurably eligible (quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes), so the first unmeasured line in config/claude-account is used without quota evidence
+account: ordinary
+[exit 0]
+

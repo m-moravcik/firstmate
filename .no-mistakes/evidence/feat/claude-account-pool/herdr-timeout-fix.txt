@@ -1,0 +1,7 @@
+### base a1ecefb (bare timeout), stock macOS without coreutils timeout
+$LAB/herdr-one-base.sh: line 3978: timeout: command not found
+not ok - piped composer probe on bad target hung or failed with rc=127
+[exit 1]
+### target f8eef0e (fm_run_timed)
+ok - fm_backend_composer_state (herdr): piped probe on bad target does not hang EOF-sensitive readers
+[exit 0]

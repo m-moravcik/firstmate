@@ -1,0 +1,65 @@
+### R1 undeclared entry
+pool:
+$LAB/seats/a
+$LAB/seats/b
+$LAB/seats/c
+$LAB/seats/empty
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude --account $LAB/seats/zzz
+error: --account '$LAB/seats/zzz' is not declared in config/claude-account (declared: $LAB/seats/a, $LAB/seats/b, $LAB/seats/c, $LAB/seats/empty); pass one declared line exactly: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R1b near-miss entry (trailing slash is not the exact line)
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude --account $LAB/seats/b/
+error: --account '$LAB/seats/b/' is not declared in config/claude-account (declared: $LAB/seats/a, $LAB/seats/b, $LAB/seats/c, $LAB/seats/empty); pass one declared line exactly: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R2 non-Claude runner (codex, pi)
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness codex --account $LAB/seats/b
+error: --account selects a declared line of config/claude-account, so it applies only to Claude launches, not 'codex'
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness pi --account $LAB/seats/b
+error: --account selects a declared line of config/claude-account, so it applies only to Claude launches, not 'pi'
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R2b raw launch command
+$ fm-spawn.sh acct1 $LAB/work/demo sh -c 'sleep 5' --mode local-only --yolo off --account $LAB/seats/b
+error: --account selects a declared line of config/claude-account, so it applies only to Claude launches, not 'sh'
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R3 home without config/claude-account
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude --account $LAB/seats/b
+error: --account '$LAB/seats/b' needs config/claude-account, which this home does not have; only the captain declares the accounts a home may launch Claude workers on: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R4 broken pool: one declared root missing -> every Claude launch refuses, even on a valid line
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude --account $LAB/seats/a
+error: config/claude-account must name a readable, searchable existing directory (ordinary means ~/.claude with CLAUDE_CONFIG_DIR unset): $LAB/config/claude-account -> $LAB/seats/missing
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude
+error: config/claude-account must name a readable, searchable existing directory (ordinary means ~/.claude with CLAUDE_CONFIG_DIR unset): $LAB/config/claude-account -> $LAB/seats/missing
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R5 malformed pools: repeated line, blank line, relative path
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: $LAB/config/claude-account
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R6 declared but signed-out seat selected -> sign-in refusal before any endpoint
+$ fm-spawn.sh acct1 $LAB/work/demo --mode local-only --yolo off --harness claude --account $LAB/seats/empty
+error: config/claude-account pins Claude workers to $LAB/seats/empty, which is not signed in (claude auth status); sign in with CLAUDE_CONFIG_DIR=$LAB/seats/empty claude, then /login, or change the pin
+[exit 1] state/acct1.meta exists: no; tmux windows: zsh 
+
+### R7 remote secondmate with --account
+$ fm-spawn.sh rsm --secondmate --account $LAB/seats/b
+error: --account selects a line of this home's config/claude-account, but remote secondmate rsm launches on its host from its own home's configuration; drop --account
+[exit 1]

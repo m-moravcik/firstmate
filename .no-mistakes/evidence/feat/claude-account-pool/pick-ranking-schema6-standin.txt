@@ -1,0 +1,65 @@
+pool:
+ordinary
+$LAB/seats/b
+$LAB/seats/c
+
+### P1 highest spendPriority wins (ordinary bound via the default keychain store; seats/c exhausted)
+$ fm-claude-account.sh pick 
+lane: ordinary accountKey=acct-personal scope=all_models effectivePercentRemaining=40 spendPriority=1 runway=through_reset resetsAt=2026-10-12T08:00:00Z verdict=eligible (fresh and measured)
+lane: $LAB/seats/b accountKey=acct-work scope=all_models effectivePercentRemaining=80 spendPriority=2 runway=through_reset resetsAt=2026-10-12T09:00:00Z verdict=eligible (fresh and measured)
+lane: $LAB/seats/c accountKey=acct-monivio scope=all_models effectivePercentRemaining=0 spendPriority=3 runway=exhausted_now resetsAt=2026-10-12T07:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+basis: highest spendPriority 2 among 2 eligible account(s)
+account: $LAB/seats/b
+[exit 0]
+quota-axi called: CLAUDE_CONFIG_DIR=unset QUOTA_AXI_CLAUDE_PROFILES=$LAB/seats/b:$LAB/seats/c ARGS=--provider claude --full --json
+
+### P2 spendPriority tie broken by earliest resetsAt
+$ fm-claude-account.sh pick 
+lane: ordinary accountKey=acct-personal scope=all_models effectivePercentRemaining=40 spendPriority=2 runway=through_reset resetsAt=2026-10-12T10:00:00Z verdict=eligible (fresh and measured)
+lane: $LAB/seats/b accountKey=acct-work scope=all_models effectivePercentRemaining=80 spendPriority=2 runway=through_reset resetsAt=2026-10-12T09:00:00Z verdict=eligible (fresh and measured)
+lane: $LAB/seats/c accountKey=acct-monivio scope=all_models effectivePercentRemaining=60 spendPriority=2 runway=projected_exhaustion resetsAt=2026-10-12T06:00:00Z verdict=eligible (fresh and measured)
+basis: highest spendPriority 2, tied and broken by the earliest resetsAt
+account: $LAB/seats/c
+[exit 0]
+quota-axi called: CLAUDE_CONFIG_DIR=unset QUOTA_AXI_CLAUDE_PROFILES=$LAB/seats/b:$LAB/seats/c ARGS=--provider claude --full --json
+
+### P4 adversarial: a lane for an undeclared seat is never chosen (firstmate does not discover ~/.claude-* dirs)
+$ fm-claude-account.sh pick 
+lane: ordinary accountKey=acct-personal scope=all_models effectivePercentRemaining=0 spendPriority=2 runway=exhausted_now resetsAt=2026-10-12T10:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+lane: $LAB/seats/b accountKey=acct-work scope=all_models effectivePercentRemaining=0 spendPriority=2 runway=exhausted_now resetsAt=2026-10-12T09:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+lane: $LAB/seats/c accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (no quota-axi lane carries a locator for this account)
+basis: UNMEASURED DEFAULT: no account is measurably eligible (no quota-axi lane carries a locator for this account), so the first unmeasured line in config/claude-account is used without quota evidence
+account: $LAB/seats/c
+[exit 0]
+quota-axi called: CLAUDE_CONFIG_DIR=unset QUOTA_AXI_CLAUDE_PROFILES=$LAB/seats/b:$LAB/seats/c ARGS=--provider claude --full --json
+
+### P4b adversarial: a non-default lane whose path is ~/.claude does not bind 'ordinary' on a keychain host
+$ fm-claude-account.sh pick 
+lane: ordinary accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (no quota-axi lane carries a locator for this account)
+lane: $LAB/seats/b accountKey=acct-work scope=all_models effectivePercentRemaining=30 spendPriority=1 runway=through_reset resetsAt=2026-10-12T09:00:00Z verdict=eligible (fresh and measured)
+lane: $LAB/seats/c accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (no quota-axi lane carries a locator for this account)
+basis: highest spendPriority 1 among 1 eligible account(s)
+account: $LAB/seats/b
+[exit 0]
+quota-axi called: CLAUDE_CONFIG_DIR=unset QUOTA_AXI_CLAUDE_PROFILES=$LAB/seats/b:$LAB/seats/c ARGS=--provider claude --full --json
+
+### P3 every declared account measured and exhausted -> exit 3, no account line
+$ fm-claude-account.sh pick 
+lane: ordinary accountKey=acct-personal scope=all_models effectivePercentRemaining=0 spendPriority=2 runway=exhausted_now resetsAt=2026-10-12T10:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+lane: $LAB/seats/b accountKey=acct-work scope=all_models effectivePercentRemaining=0 spendPriority=2 runway=exhausted_now resetsAt=2026-10-12T09:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+lane: $LAB/seats/c accountKey=acct-monivio scope=all_models effectivePercentRemaining=0 spendPriority=1 runway=exhausted_now resetsAt=2026-10-12T06:00:00Z verdict=exhausted (no allowance left in the all_models scope)
+basis: every declared Claude account is measured and exhausted; report instead of spawning
+[exit 3]
+quota-axi called: CLAUDE_CONFIG_DIR=unset QUOTA_AXI_CLAUDE_PROFILES=$LAB/seats/b:$LAB/seats/c ARGS=--provider claude --full --json
+
+### P5 single-line pin: nothing to choose, quota-axi not run (no 'quota-axi called' line)
+$ fm-claude-account.sh pick 
+basis: config/claude-account declares one account, so there is nothing to choose
+account: $LAB/seats/b
+[exit 0]
+
+### P6 malformed pool refused (exit 1)
+$ fm-claude-account.sh pick 
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: $LAB/config/claude-account
+[exit 1]
+

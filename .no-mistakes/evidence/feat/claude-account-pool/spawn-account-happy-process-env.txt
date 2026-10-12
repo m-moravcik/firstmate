@@ -1,0 +1,4 @@
+pid 43752 treehouse CLAUDE_CONFIG_DIR=/Users/moravcikmi/.claude-work
+pid 43811 /bin/zsh CLAUDE_CONFIG_DIR=
+pid 46455 claude CLAUDE_CONFIG_DIR=$LAB/seats/b
+pid 46607 caffeinate CLAUDE_CONFIG_DIR=

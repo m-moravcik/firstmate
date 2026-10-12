@@ -1,0 +1,47 @@
+=== fm-claude-account
+ok - pick ranks measured lanes by spendPriority and runs quota-axi once with the pool's paths
+ok - pick applies a lane's model scope when quota-axi reports one, else all_models
+ok - pick skips an exhausted lane even when its spendPriority is higher
+ok - pick exits 3 when every declared account is exhausted, and otherwise discloses an unmeasured fallback
+ok - pick discloses an unmeasured first-line default for old, locator-less, or failed quota-axi output
+ok - pick binds ordinary to the unsuffixed Claude Code-credentials lane only
+ok - pick breaks an exact spendPriority tie by the earliest reset, then by pool order
+ok - pick skips quota-axi for a single-line or absent pin
+ok - pick refuses a malformed pool and rejects bad usage
+# all fm-claude-account tests passed
+[exit ]
+=== fm-worker-account
+ok - a Claude pin selects its root and sheds the credentials that would outrank it
+ok - a Claude pin refuses a signed-out root even when the invoking process has a usable login and API key
+ok - an ordinary Claude pin selects the default login and drops an ambient root
+ok - malformed, relative, CR-terminated, empty, extra-line, missing-root, and non-file pins refuse before launch
+ok - a Claude pool launches on its first line by default and on any declared line named by --account
+ok - a pool refuses --account outside Claude, without a file, undeclared, signed out, or empty, and refuses malformed pools
+ok - a Pi pin selects its root and passes the declared provider
+ok - a Pi pin refuses unqualified, missing, undeclared, signed-out, and raw launches
+ok - extension providers and a Pi without auth check fall back to an exact model-listing match
+ok - a Claude pin leaves codex and Pi launches unchanged
+ok - a raw Claude launch command receives the home's pin
+ok - a pinned home refuses a raw Claude command that overrides the account
+ok - an unpinned home keeps a raw Claude account override
+ok - a local secondmate reads the launching home's pin and its own home's file is never inherited over
+# all fm-worker-account tests passed
+[exit ]
+=== fm-control-relaunch
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/sendemail-validate: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/applypatch-msg: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/prepare-commit-msg: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/post-checkout: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/post-applypatch: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/post-rewrite: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/commit-msg: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/pre-push: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/post-merge: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks/pre-commit: Permission denied
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state/rl31.git-hooks: Directory not empty
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home/state: Directory not empty
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775/home: Directory not empty
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi/musewiring-21775: Directory not empty
+rm: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-control-relaunch.fxFudi: Directory not empty
+[exit ]
+=== fm-spawn-dispatch-profile

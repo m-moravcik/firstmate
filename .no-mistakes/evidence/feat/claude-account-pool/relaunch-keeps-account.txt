@@ -1,0 +1,14 @@
+### RL1 relaunch without --account keeps the recorded account (issue #5479)
+pool (first line is seats/a):
+$LAB/seats/a
+$LAB/seats/b
+$LAB/seats/c
+$LAB/seats/empty
+before: account=$LAB/seats/b; claude pid=46455 CLAUDE_CONFIG_DIR=$LAB/seats/b
+$ fm-control.sh acct1 relaunch --note 'lab: keep account'
+warning: $LAB/data/acct1/launch-brief.md records no ship branch; defaulting to legacy branch fm/acct1
+warning: $LAB/data/acct1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: acct1 ships mode=local-only while the standing posture for demo is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched acct1 harness=claude from=claude model=default effort=default backend=tmux endpoint=primary:fm-acct1 worktree=/Users/moravcikmi/.treehouse/demo-428d51/1/demo account=$LAB/seats/b
+[exit 0]
+after:  account=$LAB/seats/b; claude pid=47423 CLAUDE_CONFIG_DIR=$LAB/seats/b

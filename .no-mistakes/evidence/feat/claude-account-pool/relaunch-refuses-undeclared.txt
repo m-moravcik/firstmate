@@ -1,0 +1,19 @@
+### RL2 recorded account no longer declared -> relaunch refuses before the running agent stops
+pool now:
+$LAB/seats/a
+$LAB/seats/c
+before: account=$LAB/seats/b; claude pid=47423 CLAUDE_CONFIG_DIR=$LAB/seats/b
+$ fm-control.sh acct1 relaunch --note 'lab: account removed'
+error: task acct1 was launched on Claude account '$LAB/seats/b', which config/claude-account no longer declares (declared: $LAB/seats/a, $LAB/seats/c); restore that line in $LAB/config/claude-account, or relaunch with --account <entry> to move the task to a declared account deliberately
+[exit 1]
+after:  account=$LAB/seats/b; claude pid=47423 CLAUDE_CONFIG_DIR=$LAB/seats/b
+
+### RL2b adversarial: explicit --account naming an undeclared entry also refuses before stop
+$ fm-control.sh acct1 relaunch --account $LAB/seats/b --note 'lab: undeclared explicit'
+error: --account '$LAB/seats/b' is not declared in config/claude-account (declared: $LAB/seats/a, $LAB/seats/c); pass one declared line exactly: $LAB/config/claude-account
+[exit 1]
+after:  account=$LAB/seats/b; claude pid=47423 CLAUDE_CONFIG_DIR=$LAB/seats/b
+
+### RL2c --account on a non-relaunch verb is refused
+error: --harness, --model, --effort, --account, and --note apply to 'relaunch' only
+[exit 1]
