@@ -1,0 +1,6 @@
+$ fm-spawn.sh cm3 <proj> --harness claude --account <undeclared claude-C> --mode local-only --yolo off --backend herdr
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab
+error: --account '/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C' is not declared in config/claude-account (declared: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A, /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B); pass one declared line exactly: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/config/claude-account
+exit=1
+$ ls state/ ; herdr tabs in lab
+{"id":"cli:workspace:list","result":{"type":"workspace_list","workspaces":[]}}

@@ -1,0 +1,6 @@
+# pool = [A, B]; secondmate sm1 recorded on C (no longer declared); its pane was closed
+$ fm-spawn.sh sm1 --secondmate --harness claude --backend herdr   (bare respawn)
+warning: secondmate sm1 sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm1 harness=claude kind=secondmate mode=secondmate yolo=off window=fm-lab-acctpool-83038-15583:w5:p2 worktree=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/sm-home account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A
+window=fm-lab-acctpool-83038-15583:w5:p2
+account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A

@@ -1,0 +1,34 @@
+# running claude process env (ps eww), filtered to lab roots
+pid 1818 cmd=claude CLAUDE_CONFIG_DIR=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B
+
+# herdr pane w1:p2 (lab session fm-lab-acctpool-83038-15583)
+moravcikmi@MekBuk-Pro: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/proj $ treehouse get
+
+A new version of treehouse is available: v2.0.1 → v3.1.3
+Run "treehouse update" to update
+
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/proj-725ee9/1/proj. Type 'exit' to return.
+moravcikmi@MekBuk-Pro: ~/.treehouse/proj-725ee9/1/proj $ cd -- '/Users/moravcikmi/.treehouse/proj-725ee9/1/proj'
+moravcikmi@MekBuk-Pro: ~/.treehouse/proj-725ee9/1/proj $ export GOTMPDIR=/tmp/fm-cm1/gotmp
+moravcikmi@MekBuk-Pro: ~/.treehouse/proj-725ee9/1/proj $ export COMPACT_ADVISER_DISABLE=1
+moravcikmi@MekBuk-Pro: ~/.treehouse/proj-725ee9/1/proj $ export FM_TASK_ID=cm1
+moravcikmi@MekBuk-Pro: ~/.treehouse/proj-725ee9/1/proj $ . '/tmp/fm-cm1+2ec17aca03cfc792ed1c7a0a92f0aa73d202b428fa7ee737
+1dd719f8f7abb5c2/launch.s1791980720.98267.21694.sh'
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  WARNING: Claude Code running in Bypass Permissions mode
+
+  In Bypass Permissions mode, Claude Code will not ask for your approval before running potentially dangerous
+  commands.
+  This mode should only be used in a sandboxed container/VM that has restricted internet access and can easily be
+  restored if damaged.
+
+  By proceeding, you accept all responsibility for actions taken while running in Bypass Permissions mode.
+
+  https://code.claude.com/docs/en/security
+
+  ❯ No, exit
+    Yes, I accept
+
+  Enter to confirm · Esc to cancel

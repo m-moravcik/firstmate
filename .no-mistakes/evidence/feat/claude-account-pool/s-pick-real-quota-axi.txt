@@ -1,0 +1,20 @@
+# real quota-axi 0.1.61
+## no config/claude-account
+$ fm-claude-account.sh pick
+basis: this home has no config/claude-account, so Claude workers launch unpinned; spawn without --account
+account: none
+exit=0
+
+## single line [A] (quota-axi not consulted)
+$ fm-claude-account.sh pick
+basis: config/claude-account declares one account, so there is nothing to choose
+account: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A
+exit=0
+
+## pool [A, C]
+$ fm-claude-account.sh pick --model opus
+lane: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A accountKey=profile:82b58ead55d257a7acd505b9 scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (lane status is error)
+lane: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C accountKey=profile:ffb461c5c5a15903d49997d0 scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (lane status is error)
+basis: UNMEASURED DEFAULT: no account is measurably eligible (lane status is error), so the first unmeasured line in config/claude-account is used without quota evidence
+account: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-A
+exit=0 elapsed=1s

@@ -1,0 +1,17 @@
+# pool with a repeated line: [A, C, A]
+$ fm-spawn.sh cm3 <proj> --harness claude --mode local-only --yolo off --backend herdr
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/config/claude-account
+state/cm3.meta exists: no
+$ fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/config/claude-account
+exit=1
+
+# pool with a blank line: [A, '', C]
+$ fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/config/claude-account
+exit=1
+
+# valid pool [A, C]; --account on a non-Claude harness
+$ fm-spawn.sh cm3 <proj> --harness codex --account <claude-A> ...
+error: --account selects a declared line of config/claude-account, so it applies only to Claude launches, not 'codex'
+state/cm3.meta exists: no

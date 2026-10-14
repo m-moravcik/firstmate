@@ -1,0 +1,7 @@
+# pool = [A, C]
+$ fm-spawn.sh sm1 <sm-home> --harness claude --account <claude-C> --secondmate --backend herdr
+warning: secondmate sm1 sync skipped before launch: primary default-branch commit cannot be resolved
+spawned sm1 harness=claude kind=secondmate mode=secondmate yolo=off window=fm-lab-acctpool-83038-15583:w3:p2 worktree=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/sm-home account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C
+window=fm-lab-acctpool-83038-15583:w3:p2
+kind=secondmate
+account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C

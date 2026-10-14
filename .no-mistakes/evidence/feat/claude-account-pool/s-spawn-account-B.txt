@@ -1,0 +1,29 @@
+$ fm-spawn.sh cm1 <proj> --harness claude --account <claude-B, line 2 of pool> --mode local-only --yolo off --backend herdr
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab
+warning: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/data/cm1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cm1
+warning: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/data/cm1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: cm1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+warning: herdr presentation parent is absent or ambiguous; using the ordinary flat layout without projection
+spawned cm1 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpool-83038-15583:w1:p2 worktree=/Users/moravcikmi/.treehouse/proj-725ee9/1/proj account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B
+exit=0
+$ cat state/cm1.meta
+window=fm-lab-acctpool-83038-15583:w1:p2
+endpoint_task_id=cm1
+worktree=/Users/moravcikmi/.treehouse/proj-725ee9/1/proj
+project=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/proj
+harness=claude
+kind=ship
+mode=local-only
+yolo=off
+branch=fm/cm1
+tasktmp=/tmp/fm-cm1
+model=default
+effort=default
+account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B
+busy_gen=g1791980720.99983.31042
+spawn_gen=s1791980720.98267.21694
+backend=herdr
+herdr_session=fm-lab-acctpool-83038-15583
+herdr_workspace_id=w1
+herdr_tab_id=w1:t2
+herdr_pane_id=w1:p2

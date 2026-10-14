@@ -1,0 +1,12 @@
+# config/claude-account is now a SINGLE line = claude-B; task cm1 recorded on claude-A; old lab claude (pid 76850) exited
+$ fm-control.sh cm1 relaunch --note "single-line pin changed"
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab
+warning: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/data/cm1/launch-brief.md records no ship branch; defaulting to legacy branch fm/cm1
+warning: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/lab/data/cm1/launch-brief.md records no delivery contract line (scaffolded before ship briefs recorded one); launching on the explicit --mode local-only - confirm its definition of done matches
+notice: cm1 ships mode=local-only while the standing posture for proj is no-mistakes - less rigor than the captain's standing posture; proceed only on a current explicit captain instruction or an intake judgment you can state
+relaunched cm1 harness=claude from=claude model=default effort=default backend=herdr endpoint=fm-lab-acctpool-83038-15583:w1:p2 worktree=/Users/moravcikmi/.treehouse/proj-725ee9/1/proj
+exit=0
+account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B
+# running claude processes on lab roots:
+CLAUDE_CONFIG_DIR=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B

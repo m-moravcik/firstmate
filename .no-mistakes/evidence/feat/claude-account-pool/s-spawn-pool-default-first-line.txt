@@ -1,0 +1,8 @@
+# pool = [C, A]
+$ fm-spawn.sh cm2 <proj> --harness claude --mode local-only --yolo off --backend herdr   (no --account)
+spawned cm2 harness=claude kind=ship mode=local-only yolo=off window=fm-lab-acctpool-83038-15583:w2:p2 worktree=/Users/moravcikmi/.treehouse/proj-725ee9/2/proj account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C
+exit=
+account=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C
+# running claude processes on lab roots:
+CLAUDE_CONFIG_DIR=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-B
+CLAUDE_CONFIG_DIR=/private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-acct-live.hMGoFe/claude-C
