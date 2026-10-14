@@ -1,0 +1,15 @@
+## data/secondmates.md:
+- remsm - lab remote probe (host: lab-unreachable.invalid; root: /opt/fm; home: /opt/fm-home; scope: lab probe only; projects: none; added 2026-10-14)
+## pool:
+ordinary
+/Users/moravcikmi/.claude-work
+$ fm-spawn.sh remsm --secondmate --harness claude --account /Users/moravcikmi/.claude-work
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.nQA8gO
+error: --account selects a line of this home's config/claude-account, but remote secondmate remsm launches on its host from its own home's configuration; drop --account
+[exit 1]
+state after: []
+
+## control: same spawn without --account goes on to the remote host path (unreachable lab host)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.nQA8gO
+error: remote secondmate remsm readiness could not be confirmed; preserved route lab-unreachable.invalid:/opt/fm-home
+ssh: Could not resolve hostname lab-unreachable.invalid: nodename nor servname provided, or not known

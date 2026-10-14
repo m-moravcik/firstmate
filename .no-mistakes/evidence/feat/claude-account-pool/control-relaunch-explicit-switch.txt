@@ -1,0 +1,13 @@
+## pool:
+ordinary
+/Users/moravcikmi/.claude-work
+/Users/moravcikmi/.claude-monivio
+## live claude before: []  record: account=/Users/moravcikmi/.claude-work
+$ fm-control.sh acctscout relaunch --account /Users/moravcikmi/.claude-monivio --note 'lab: deliberate switch'
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+relaunched acctscout harness=claude from=claude model=haiku effort=default backend=herdr endpoint=fm-lab-acctpool-44133-13547:w1:p2 worktree=/Users/moravcikmi/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG account=/Users/moravcikmi/.claude-monivio
+[exit ]
+## live claude after: [pid 60882 CLAUDE_CONFIG_DIR=/Users/moravcikmi/.claude-monivio]
+## record after: harness=claude account=/Users/moravcikmi/.claude-monivio 

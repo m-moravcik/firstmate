@@ -1,0 +1,24 @@
+$ fm-spawn.sh acctscout <proj> --scout --harness claude --model haiku --backend herdr --account /Users/moravcikmi/.claude-work
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+warning: herdr presentation parent is absent or ambiguous; using the ordinary flat layout without projection
+spawned acctscout harness=claude kind=scout window=fm-lab-acctpool-44133-13547:w1:p2 worktree=/Users/moravcikmi/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG account=/Users/moravcikmi/.claude-work
+[exit 0]
+
+## state/acctscout.meta
+window=fm-lab-acctpool-44133-13547:w1:p2
+endpoint_task_id=acctscout
+worktree=/Users/moravcikmi/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG
+project=/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-lab-proj.lHF9rG
+harness=claude
+kind=scout
+tasktmp=/tmp/fm-acctscout
+model=haiku
+effort=default
+account=/Users/moravcikmi/.claude-work
+busy_gen=g1791960497.47927.11385
+spawn_gen=s1791960497.47021.26910
+backend=herdr
+herdr_session=fm-lab-acctpool-44133-13547
+herdr_workspace_id=w1
+herdr_tab_id=w1:t2
+herdr_pane_id=w1:p2

@@ -1,0 +1,61 @@
+## S4 three-line pool, quota-axi absent from PATH (PATH=/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/tmp.6uZVfMTAwx:/usr/bin:/bin)
+--- config/claude-account:
+ordinary$
+/Users/moravcikmi/.claude-work$
+/Users/moravcikmi/.claude-monivio$
+$ PATH=... bin/fm-claude-account.sh pick
+lane: ordinary accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi is not installed)
+lane: /Users/moravcikmi/.claude-work accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi is not installed)
+lane: /Users/moravcikmi/.claude-monivio accountKey=unmeasured scope=none effectivePercentRemaining=unknown spendPriority=unknown runway=unknown resetsAt=unknown verdict=unmeasured (quota-axi is not installed)
+basis: UNMEASURED DEFAULT: no account is measurably eligible (quota-axi is not installed), so the first unmeasured line in config/claude-account is used without quota evidence
+account: ordinary
+[exit 0]
+
+## S5 malformed pools fail closed
+--- config/claude-account:
+ordinary$
+$
+/Users/moravcikmi/.claude-work$
+$ bin/fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+
+--- config/claude-account:
+/Users/moravcikmi/.claude-work$
+/Users/moravcikmi/.claude-work$
+$ bin/fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+
+--- config/claude-account:
+ordinary$
+relative/claude$
+$ bin/fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+
+--- config/claude-account:
+ordinary$
+/Users/moravcikmi/.claude-does-not-exist-lab$
+$ bin/fm-claude-account.sh pick
+error: config/claude-account must name a readable, searchable existing directory (ordinary means ~/.claude with CLAUDE_CONFIG_DIR unset): /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account -> /Users/moravcikmi/.claude-does-not-exist-lab
+[exit 1]
+
+--- config/claude-account:
+ordinary$
+ordinary$
+$ bin/fm-claude-account.sh pick
+error: config/claude-account must hold one account per line - 'ordinary' or an absolute path - each distinct, with no blank lines or control characters; the first line is this home's default account: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+
+## S5b usage errors
+$ bin/fm-claude-account.sh
+error: a subcommand is required
+usage: fm-claude-account.sh pick [--model <claude-model>]
+[exit 2]
+
+$ bin/fm-claude-account.sh pick --bogus
+error: unexpected argument: --bogus
+usage: fm-claude-account.sh pick [--model <claude-model>]
+[exit 2]
+

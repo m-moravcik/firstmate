@@ -1,0 +1,11 @@
+## pool now (line .claude-work removed):
+ordinary
+/Users/moravcikmi/.claude-monivio
+## agent pid before: 48651 claude
+$ fm-control.sh acctscout relaunch --note lab relaunch probe
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: task acctscout was launched on Claude account '/Users/moravcikmi/.claude-work', which config/claude-account no longer declares (declared: ordinary, /Users/moravcikmi/.claude-monivio); restore that line in /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account, or relaunch with --account <entry> to move the task to a declared account deliberately
+[exit 1]
+## agent pid after: 48651 claude
+## meta account after: account=/Users/moravcikmi/.claude-work
+(no relaunch journal left)

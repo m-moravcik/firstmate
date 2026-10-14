@@ -1,0 +1,31 @@
+moravcikmi@MekBuk-Pro: /private/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T/fm-lab-proj.lHF9rG $ treehouse get
+🌳 Setting up worktree...
+🌳 Entered worktree at ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG. Type 'exit' to return.
+moravcikmi@MekBuk-Pro: ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG $ cd -- '/Users/moravcikmi/.treehouse
+/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG'
+moravcikmi@MekBuk-Pro: ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG $ export GOTMPDIR=/tmp/fm-acctscout/g
+otmp
+moravcikmi@MekBuk-Pro: ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG $ export COMPACT_ADVISER_DISABLE=1
+moravcikmi@MekBuk-Pro: ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG $ export FM_TASK_ID=acctscout
+moravcikmi@MekBuk-Pro: ~/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG $ . '/tmp/fm-acctscout+08cc1097db4ec5
+cc17863e138e795bdedba2cd57beefc06db667b3a7c1269744/launch.s1791960497.47021.26910.sh'
+Permission allow rule (../../../../.claude-work/settings.json): Bash(rsync * fxr@*:*) mixes * with the trailing :* prefi
+x syntax, so it is matched as a literal prefix (the * is not expanded) and matches only commands containing a literal *
+at that position. Replace that * with the exact value you mean.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  WARNING: Claude Code running in Bypass Permissions mode
+
+  In Bypass Permissions mode, Claude Code will not ask for your approval before running potentially dangerous
+  commands.
+  This mode should only be used in a sandboxed container/VM that has restricted internet access and can easily be
+  restored if damaged.
+
+  By proceeding, you accept all responsibility for actions taken while running in Bypass Permissions mode.
+
+  https://code.claude.com/docs/en/security
+
+  ❯ No, exit
+    Yes, I accept
+
+  Enter to confirm · Esc to cancel

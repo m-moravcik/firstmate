@@ -1,0 +1,19 @@
+## pool:
+ordinary
+/Users/moravcikmi/.claude-work
+/Users/moravcikmi/.claude-monivio
+## task record before: harness=claude account=/Users/moravcikmi/.claude-work 
+## live claude before: 
+$ fm-spawn.sh acctscout --relaunch --harness claude --model haiku   (no --account)
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+●  WATCHER DOWN - SUPERVISION IS OFF
+●  1 task(s) in flight, but no watcher has a fresh beacon (last beat: never, grace 300s).
+●  Trust the emitted supervision protocol for this harness; do not use shell & for watcher repair.
+●  This is a supervision warning only; the guarded operation WILL still run.
+●  watcher supervision needs Stop-owned automatic recovery; inspect the hook registration and startup status before ending the turn.
+●━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+spawned acctscout harness=claude kind=scout window=fm-lab-acctpool-44133-13547:w1:p2 worktree=/Users/moravcikmi/.treehouse/fm-lab-proj.lHF9rG-669e87/1/fm-lab-proj.lHF9rG account=/Users/moravcikmi/.claude-work
+[exit 0]
+## live claude after: pid 57204 CLAUDE_CONFIG_DIR=/Users/moravcikmi/.claude-work
+## task record after: harness=claude account=/Users/moravcikmi/.claude-work 

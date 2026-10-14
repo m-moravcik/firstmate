@@ -1,0 +1,10 @@
+ok - pick ranks measured lanes by spendPriority and runs quota-axi once with the pool's paths
+ok - pick applies a lane's model scope when quota-axi reports one, else all_models
+ok - pick skips an exhausted lane even when its spendPriority is higher
+ok - pick exits 3 when every declared account is exhausted, and otherwise discloses an unmeasured fallback
+ok - pick discloses an unmeasured first-line default for old, locator-less, or failed quota-axi output
+ok - pick binds ordinary to the unsuffixed Claude Code-credentials lane only
+ok - pick breaks an exact spendPriority tie by the earliest reset, then by pool order
+ok - pick skips quota-axi for a single-line or absent pin
+ok - pick refuses a malformed pool and rejects bad usage
+# all fm-claude-account tests passed

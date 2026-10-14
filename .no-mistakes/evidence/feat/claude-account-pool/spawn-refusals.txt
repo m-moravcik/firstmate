@@ -1,0 +1,40 @@
+## pool:
+ordinary
+/Users/moravcikmi/.claude-work
+/Users/moravcikmi/.claude-monivio
+
+## R1 undeclared --account entry
+$ fm-spawn.sh acctbad /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab-proj.lHF9rG --scout --harness claude --backend herdr --account /Users/moravcikmi/.claude-monivio2
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: --account '/Users/moravcikmi/.claude-monivio2' is not declared in config/claude-account (declared: ordinary, /Users/moravcikmi/.claude-work, /Users/moravcikmi/.claude-monivio); pass one declared line exactly: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+state after: 
+
+## R2 --account on a non-Claude runner
+$ fm-spawn.sh acctbad /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab-proj.lHF9rG --scout --harness codex --backend herdr --account /Users/moravcikmi/.claude-work
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: --account selects a declared line of config/claude-account, so it applies only to Claude launches, not 'codex'
+[exit 1]
+state after: 
+
+## R3 --account empty value
+$ fm-spawn.sh acctbad /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab-proj.lHF9rG --scout --harness claude --backend herdr --account=
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: --account requires a non-empty value
+[exit 1]
+state after: 
+
+## R4 --account in a home without config/claude-account
+$ fm-spawn.sh acctbad /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab-proj.lHF9rG --scout --harness claude --backend herdr --account /Users/moravcikmi/.claude-work
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: --account '/Users/moravcikmi/.claude-work' needs config/claude-account, which this home does not have; only the captain declares the accounts a home may launch Claude workers on: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account
+[exit 1]
+state after: 
+
+## R5 broken pool (line 3 missing dir) refuses even a launch on a valid line
+$ fm-spawn.sh acctbad /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab-proj.lHF9rG --scout --harness claude --backend herdr --account /Users/moravcikmi/.claude-work
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O
+error: config/claude-account must name a readable, searchable existing directory (ordinary means ~/.claude with CLAUDE_CONFIG_DIR unset): /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.qRhB7O/config/claude-account -> /Users/moravcikmi/.claude-nope-lab
+[exit 1]
+state after: 
+

@@ -1,0 +1,34 @@
+## S1 no config/claude-account
+$ bin/fm-claude-account.sh pick
+basis: this home has no config/claude-account, so Claude workers launch unpinned; spawn without --account
+account: none
+[exit 0]
+
+## S2 single-line pin
+/Users/moravcikmi/.claude-work
+$ bin/fm-claude-account.sh pick
+basis: config/claude-account declares one account, so there is nothing to choose
+account: /Users/moravcikmi/.claude-work
+[exit 0]
+
+## S3 three-line pool, real quota-axi 0.1.61
+ordinary
+/Users/moravcikmi/.claude-work
+/Users/moravcikmi/.claude-monivio
+$ bin/fm-claude-account.sh pick
+lane: ordinary accountKey=profile:0de18016cbc1cdf49a0027f0 scope=all_models effectivePercentRemaining=57 spendPriority=-0.1078 runway=projected_exhaustion resetsAt=2026-10-18T13:00:00.509381+00:00 verdict=eligible (fresh and measured)
+lane: /Users/moravcikmi/.claude-work accountKey=profile:728d413b07cff992f8750a6d scope=all_models effectivePercentRemaining=52 spendPriority=0.24 runway=through_reset resetsAt=2026-10-17T13:00:00.238163+00:00 verdict=eligible (fresh and measured)
+lane: /Users/moravcikmi/.claude-monivio accountKey=profile:524dcc130a98ebf9a6e7daec scope=all_models effectivePercentRemaining=14 spendPriority=0.8926 runway=through_reset resetsAt=2026-10-14T07:09:59.961097+00:00 verdict=eligible (fresh and measured)
+basis: highest spendPriority 0.8926 among 3 eligible account(s)
+account: /Users/moravcikmi/.claude-monivio
+[exit 0]
+
+## S3b same pool with --model opus
+$ bin/fm-claude-account.sh pick --model opus
+lane: ordinary accountKey=profile:0de18016cbc1cdf49a0027f0 scope=all_models effectivePercentRemaining=57 spendPriority=-0.1078 runway=projected_exhaustion resetsAt=2026-10-18T13:00:00.856473+00:00 verdict=eligible (fresh and measured)
+lane: /Users/moravcikmi/.claude-work accountKey=profile:728d413b07cff992f8750a6d scope=all_models effectivePercentRemaining=52 spendPriority=0.24 runway=through_reset resetsAt=2026-10-17T13:00:00.394490+00:00 verdict=eligible (fresh and measured)
+lane: /Users/moravcikmi/.claude-monivio accountKey=profile:524dcc130a98ebf9a6e7daec scope=all_models effectivePercentRemaining=14 spendPriority=0.8953 runway=through_reset resetsAt=2026-10-14T07:10:00.375870+00:00 verdict=eligible (fresh and measured)
+basis: highest spendPriority 0.8953 among 3 eligible account(s)
+account: /Users/moravcikmi/.claude-monivio
+[exit 0]
+

@@ -1,0 +1,2 @@
+$ command -v timeout: absent (stock macOS)
+rc=0 out=unknown
