@@ -298,7 +298,7 @@ test_unpushed_ci_ready_done_is_not_published() {
   grep -v '^pr=\|^pr_head=' "$MATE/state/child.meta" > "$MATE/state/child.meta.tmp"
   mv "$MATE/state/child.meta.tmp" "$MATE/state/child.meta"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-  [ ! -s "$MAIN/state/mate.status" ] || fail "unpushed CI-ready done: was published upstream"
+  [ ! -s "$MAIN/state/mate.status" ] && [ ! -s "$MAIN/state/mate.digest" ] || fail "unpushed CI-ready done: was published upstream"
   [ "$(outcome_count "$MATE" reported)" = 0 ] || fail "unpushed CI-ready done: left a delivery receipt"
   pass "unpushed CI-ready ship done: is not published upstream"
 }
@@ -350,7 +350,7 @@ test_delivered_ledger_done_skips_git_gate() {
   : > "$WORLD/git.log"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   [ ! -s "$WORLD/git.log" ] || fail "a poll after delivery re-ran the git gate: $(cat "$WORLD/git.log")"
-  [ "$(grep -c 'child-outcome-child-done' "$MAIN/state/mate.status")" = 1 ] \
+  [ "$(grep -c 'child-outcome-child-done' "$MAIN/state/mate.digest")" = 1 ] \
     || fail "the delivered done: was published again"
   pass "a delivered ship done: skips the git gate on later polls"
 }
@@ -368,16 +368,16 @@ test_local_secondmate_delivers_terminal_ledger_line() {
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   key=$(reported_outcome_key "$MATE" child 'done') || fail "ledger receipt did not retain its collision-resistant key"
   expected="done [key=$key]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "$expected" \
-    || fail "secondmate did not deliver the child's ledger line on a plain poll: $(cat "$MAIN/state/mate.status" 2>/dev/null)"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "$expected" \
+    || fail "secondmate did not deliver the child's ledger line on a plain poll: $(cat "$MAIN/state/mate.digest" 2>/dev/null)"
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "ledger delivery receipt was not durable"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-  [ "$(grep -c 'child-outcome-child-done' "$MAIN/state/mate.status")" = 1 ] \
+  [ "$(grep -c 'child-outcome-child-done' "$MAIN/state/mate.digest")" = 1 ] \
     || fail "a second poll delivered the same ledger line again"
   printf 'Report at /tmp/report.md\n' >> "$MATE/state/child.status"
   age "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  ! grep -q 'inactive-outcome-' "$MAIN/state/mate.status" \
+  ! cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest" 2>/dev/null | grep -q 'inactive-outcome-' \
     || fail "the inactive path reported a child the ledger delivery already owned"
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail "the inactive path minted a second receipt"
   pass "secondmate delivers a child's terminal ledger line once, on the next poll, from the ledger alone"
@@ -387,7 +387,7 @@ test_local_secondmate_delivers_terminal_ledger_line() {
 # whether the block lands before or during the state read: it is delivered once,
 # under the ledger's own outcome key, and the inactive fallback stays out of it.
 test_secondmate_multiline_terminal_outcome_is_delivered_once() {
-  local terminal timing key
+  local terminal timing key channel
   for terminal in 'done' failed; do
     for timing in before during; do
       make_world "multiline-$terminal-$timing"; bind_secondmate local
@@ -408,10 +408,12 @@ SH
       run_report "$MATE" child
       key=$(reported_outcome_key "$MATE" child "$terminal") \
         || fail "$terminal with trailing prose arriving $timing state read was not owned by the ledger"
-      sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" \
+      channel="$MAIN/state/mate.status"
+      [ "$terminal" = failed ] || channel="$MAIN/state/mate.digest"
+      sed -E 's/ \[at=[0-9]+\]//' "$channel" \
         | grep -Fq "$terminal [key=$key]: child child $terminal: validation finished" \
-        || fail "$terminal with trailing prose arriving $timing state read was lost: $(cat "$MAIN/state/mate.status" 2>/dev/null)"
-      [ "$(wc -l < "$MAIN/state/mate.status" | tr -d ' ')" = 1 ] \
+        || fail "$terminal with trailing prose arriving $timing state read was lost: $(cat "$channel" 2>/dev/null)"
+      [ "$(cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest" 2>/dev/null | wc -l | tr -d ' ')" = 1 ] \
         || fail "$terminal with trailing prose arriving $timing state read was delivered twice"
       [ "$(outcome_count "$MATE" reported)" = 1 ] \
         || fail "multiline $terminal outcome did not retain exactly one receipt"
@@ -484,14 +486,14 @@ test_busy_child_does_not_starve_later_ledger_outcomes() {
   while [ "$i" -lt 40 ] && [ ! -e "$WORLD/busy-lock-held" ]; do sleep 0.05; i=$((i + 1)); done
   if [ -e "$WORLD/busy-lock-held" ]; then
     FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-    grep -Fq 'child-outcome-b-ready-done' "$MAIN/state/mate.status" 2>/dev/null && delivered=1
+    grep -Fq 'child-outcome-b-ready-done' "$MAIN/state/mate.digest" 2>/dev/null && delivered=1
   fi
   : > "$WORLD/release-busy-lock"
   reap "$holder"
   [ "$delivered" -eq 1 ] \
     || fail "a busy early child starved a later terminal ledger outcome"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
-  grep -Fq 'child-outcome-a-busy-done' "$MAIN/state/mate.status" \
+  grep -Fq 'child-outcome-a-busy-done' "$MAIN/state/mate.digest" \
     || fail "the skipped busy child was not retried on the next poll"
   pass "busy child locks do not starve later ledger outcomes"
 }
@@ -513,19 +515,20 @@ test_secondmate_ledger_delivery_carries_report_and_failure() {
   scout_key=$(reported_outcome_key "$MATE" scout 'done') || fail "scout receipt key missing"
   boom_key=$(reported_outcome_key "$MATE" boom failed) || fail "failed receipt key missing"
   replaced_key=$(reported_outcome_key "$MATE" replaced-pr 'done') || fail "replacement PR receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$scout_key]: child scout done: report written pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off report=data/scout/report.md" \
-    || fail "scout delivery lost its report pointer: $(cat "$MAIN/state/mate.status")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$scout_key]: child scout done: report written pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off report=data/scout/report.md" \
+    || fail "scout delivery lost its report pointer: $(cat "$MAIN/state/mate.digest")"
   sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "failed [key=$boom_key]: child boom failed: build broke pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
     || fail "failed line was not delivered under the failed verb: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$replaced_key]: child replaced-pr done: PR https://example.test/owner/repo/pull/22 pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \
-    || fail "ledger fallback did not prefer the terminal ready line PR: $(cat "$MAIN/state/mate.status")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$replaced_key]: child replaced-pr done: PR https://example.test/owner/repo/pull/22 pr=https://example.test/owner/repo/pull/22 mode=no-mistakes yolo=off" \
+    || fail "ledger fallback did not prefer the terminal ready line PR: $(cat "$MAIN/state/mate.digest")"
   printf 'working: retrying\ndone: fixed on retry\n' >> "$MATE/state/boom.status"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   boom_key=$(reported_outcome_key "$MATE" boom 'done') || fail "recovered receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fq "done [key=$boom_key]: child boom done: fixed on retry" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fq "done [key=$boom_key]: child boom done: fixed on retry" \
     || fail "a new terminal line after recovery was not delivered"
-  [ "$(grep -c 'child-outcome-boom-' "$MAIN/state/mate.status")" = 2 ] \
-    || fail "recovery delivered the wrong number of lines: $(cat "$MAIN/state/mate.status")"
+  [ "$(grep -c 'child-outcome-boom-' "$MAIN/state/mate.status")" = 1 ] \
+    && [ "$(grep -c 'child-outcome-boom-' "$MAIN/state/mate.digest")" = 1 ] \
+    || fail "recovery delivered the wrong number of lines: $(cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest")"
   pass "ledger delivery carries the report pointer, the failed verb, and each new terminal line"
 }
 
@@ -554,16 +557,16 @@ test_pr_field_requires_recorded_pr_or_ready_signal_line() {
   placeholder_key=$(reported_outcome_key "$MATE" placeholder 'done') \
     || fail "unsubstituted-stamp ready receipt key missing"
   scout_key=$(reported_outcome_key "$MATE" lookout 'done') || fail "scout receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$prose_key]: child prose done: cleanup finished mode=no-mistakes yolo=off" \
-    || fail "a PR mentioned only in prose was claimed as the delivery: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$ready_key]: child ready done: PR https://example.test/owner/repo/pull/44 checks green pr=https://example.test/owner/repo/pull/44 mode=no-mistakes yolo=off" \
-    || fail "a ready-signal terminal line did not carry its PR: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$stamped_key]: child stamped done: PR https://example.test/owner/repo/pull/66 checks green pr=https://example.test/owner/repo/pull/66 mode=no-mistakes yolo=off" \
-    || fail "a stamped ready-signal terminal line did not carry its PR: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$placeholder_key]: child placeholder done: PR https://example.test/owner/repo/pull/77 checks green pr=https://example.test/owner/repo/pull/77 mode=no-mistakes yolo=off" \
-    || fail "a ready-signal line whose stamp was left unsubstituted lost its PR: $(cat "$MAIN/state/mate.status")"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$scout_key]: child lookout done: PR https://example.test/owner/repo/pull/55 mode=no-mistakes yolo=off" \
-    || fail "a scout's ready-looking line carried a PR claim: $(cat "$MAIN/state/mate.status")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$prose_key]: child prose done: cleanup finished mode=no-mistakes yolo=off" \
+    || fail "a PR mentioned only in prose was claimed as the delivery: $(cat "$MAIN/state/mate.digest")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$ready_key]: child ready done: PR https://example.test/owner/repo/pull/44 checks green pr=https://example.test/owner/repo/pull/44 mode=no-mistakes yolo=off" \
+    || fail "a ready-signal terminal line did not carry its PR: $(cat "$MAIN/state/mate.digest")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$stamped_key]: child stamped done: PR https://example.test/owner/repo/pull/66 checks green pr=https://example.test/owner/repo/pull/66 mode=no-mistakes yolo=off" \
+    || fail "a stamped ready-signal terminal line did not carry its PR: $(cat "$MAIN/state/mate.digest")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$placeholder_key]: child placeholder done: PR https://example.test/owner/repo/pull/77 checks green pr=https://example.test/owner/repo/pull/77 mode=no-mistakes yolo=off" \
+    || fail "a ready-signal line whose stamp was left unsubstituted lost its PR: $(cat "$MAIN/state/mate.digest")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$scout_key]: child lookout done: PR https://example.test/owner/repo/pull/55 mode=no-mistakes yolo=off" \
+    || fail "a scout's ready-looking line carried a PR claim: $(cat "$MAIN/state/mate.digest")"
   pass "pr= requires the recorded PR or a ready-signal terminal line, whatever its stamp, and never a scout"
 }
 
@@ -579,13 +582,12 @@ printf 'state: done · source: fake\n'
 SH
   chmod +x "$WORLD/fakebin/fm-crew-state.sh"
   run_reconcile "$MATE" --startup
-  [ ! -e "$MAIN/state/mate.status" ] \
-    || ! grep -q 'inactive-outcome-' "$MAIN/state/mate.status" \
+  ! cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest" 2>/dev/null | grep -q 'inactive-outcome-' \
     || fail "inactive reconciliation claimed an outcome whose terminal ledger arrived during state read"
   run_reconcile "$MATE"
-  [ "$(grep -c 'child-outcome-child-done-' "$MAIN/state/mate.status")" = 1 ] \
+  [ "$(grep -c 'child-outcome-child-done-' "$MAIN/state/mate.digest")" = 1 ] \
     || fail "the next ledger pass did not deliver the raced terminal line exactly once"
-  ! grep -q 'inactive-outcome-' "$MAIN/state/mate.status" \
+  ! cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest" 2>/dev/null | grep -q 'inactive-outcome-' \
     || fail "one raced terminal event was reported by both reconciliation paths"
   pass "terminal lines arriving during state reads remain ledger-owned"
 }
@@ -598,21 +600,21 @@ test_terminal_line_after_inactive_delivery_is_not_reported_twice() {
   make_world inactive-ledger-race; bind_secondmate local
   write_child "$MATE" child 'working: finishing now'
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  [ "$(grep -c 'inactive-outcome-mate-child-done' "$MAIN/state/mate.status")" = 1 ] \
+  [ "$(grep -c 'inactive-outcome-mate-child-done' "$MAIN/state/mate.digest")" = 1 ] \
     || fail "inactive fallback did not publish exactly once"
 
   printf 'done: completion landed after reconciliation\n' >> "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE"
-  [ "$(wc -l < "$MAIN/state/mate.status" | tr -d ' ')" = 1 ] \
-    || fail "one completion was published by both inactive and ledger paths: $(cat "$MAIN/state/mate.status")"
+  [ "$(wc -l < "$MAIN/state/mate.digest" | tr -d ' ')" = 1 ] \
+    || fail "one completion was published by both inactive and ledger paths: $(cat "$MAIN/state/mate.digest")"
   [ "$(outcome_count "$MATE" reported)" = 2 ] \
     || fail "the raced ledger event was not durably reconciled with the fallback receipt"
 
   printf 'working: retrying after completion\ndone: completed again\n' >> "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE"
-  [ "$(wc -l < "$MAIN/state/mate.status" | tr -d ' ')" = 2 ] \
-    || fail "the inactive claim suppressed a later same-state terminal event: $(cat "$MAIN/state/mate.status")"
-  grep -Fq 'child child done: completed again' "$MAIN/state/mate.status" \
+  [ "$(wc -l < "$MAIN/state/mate.digest" | tr -d ' ')" = 2 ] \
+    || fail "the inactive claim suppressed a later same-state terminal event: $(cat "$MAIN/state/mate.digest")"
+  grep -Fq 'child child done: completed again' "$MAIN/state/mate.digest" \
     || fail "the later same-state terminal event was not delivered"
   pass "inactive and ledger paths reconcile one raced completion without hiding later events"
 }
@@ -625,9 +627,9 @@ test_progress_after_inactive_delivery_starts_a_new_event() {
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
   printf 'working: retry started\ndone: retry completed\n' >> "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE"
-  [ "$(wc -l < "$MAIN/state/mate.status" | tr -d ' ')" = 2 ] \
-    || fail "an intervening progress event did not separate two completions: $(cat "$MAIN/state/mate.status")"
-  grep -Fq 'child child done: retry completed' "$MAIN/state/mate.status" \
+  [ "$(wc -l < "$MAIN/state/mate.digest" | tr -d ' ')" = 2 ] \
+    || fail "an intervening progress event did not separate two completions: $(cat "$MAIN/state/mate.digest")"
+  grep -Fq 'child child done: retry completed' "$MAIN/state/mate.digest" \
     || fail "the completion after recovery was not delivered"
   pass "progress after an inactive fallback starts a distinct terminal event"
 }
@@ -657,15 +659,15 @@ test_secondmate_partial_ledger_line_waits_for_newline() {
   printf 'done: half writ' >> "$MATE/state/child.status"
   age "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  [ ! -s "$MAIN/state/mate.status" ] \
-    || fail "an unterminated ledger line was delivered: $(cat "$MAIN/state/mate.status")"
+  [ ! -s "$MAIN/state/mate.status" ] && [ ! -s "$MAIN/state/mate.digest" ] \
+    || fail "an unterminated ledger line was delivered: $(cat "$MAIN/state/mate.status" "$MAIN/state/mate.digest" 2>/dev/null)"
   printf 'ten\n' >> "$MATE/state/child.status"
   FM_FAKE_CREW_STATE='unknown' run_reconcile "$MATE"
   key=$(reported_outcome_key "$MATE" child 'done') || fail "completed ledger receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fq "done [key=$key]: child child done: half written" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fq "done [key=$key]: child child done: half written" \
     || fail "the completed line was not delivered once its newline landed"
   FM_FAKE_CREW_STATE='done' run_reconcile "$MATE" --startup
-  [ "$(wc -l < "$MAIN/state/mate.status" | tr -d ' ')" = 1 ] \
+  [ "$(wc -l < "$MAIN/state/mate.digest" | tr -d ' ')" = 1 ] \
     || fail "completing the partial line delivered the outcome twice"
   pass "a ledger line still being appended waits for its newline"
 }
@@ -697,7 +699,7 @@ test_pending_ledger_done_is_delivered_after_worktree_removal() {
   cp "$WORLD/parent-binding" "$MATE/.fm-secondmate-parent"
   run_report "$MATE" child || fail "report refused the pending delivery"
   key=$(reported_outcome_key "$MATE" child 'done') || fail "pending delivery was dropped instead of reported"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fq "done [key=$key]: child child done: PR https://example.test/owner/repo/pull/2 checks green" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fq "done [key=$key]: child child done: PR https://example.test/owner/repo/pull/2 checks green" \
     || fail "report did not deliver the pending done after the worktree was removed"
   pass "a pending ship done: is delivered by report after teardown removed the worktree"
 }
@@ -710,7 +712,7 @@ test_report_subcommand_delivers_and_refuses() {
   write_child "$MATE" child 'done: final word'
   run_report "$MATE" child || fail "report refused a deliverable ledger line"
   key=$(reported_outcome_key "$MATE" child 'done') || fail "report receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fq "done [key=$key]: child child done: final word" \
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fq "done [key=$key]: child child done: final word" \
     || fail "report did not deliver the child's final line"
   run_report "$MATE" child || fail "report did not treat an already delivered line as owed nothing"
   write_child "$MATE" quiet 'working: nothing terminal'
@@ -998,14 +1000,14 @@ test_watcher_poll_delivers_child_ledger_line_to_parent() {
   i=0
   while [ "$i" -lt 100 ]; do
     kill -0 "$pid" 2>/dev/null || break
-    grep -q 'child-outcome-child-done' "$MAIN/state/mate.status" 2>/dev/null && break
+    grep -q 'child-outcome-child-done' "$MAIN/state/mate.digest" 2>/dev/null && break
     sleep 0.1
     i=$((i + 1))
   done
   reap "$pid"
   key=$(reported_outcome_key "$MATE" child 'done') || fail "watcher ledger receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$key]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
-    || fail "the watcher poll did not deliver the child's ledger line to the parent: $(cat "$MAIN/state/mate.status" 2>/dev/null; cat "$WORLD/mate-watch.out")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$key]: child child done: PR https://example.test/owner/repo/pull/1 checks green pr=https://example.test/owner/repo/pull/1 mode=no-mistakes yolo=off" \
+    || fail "the watcher poll did not deliver the child's ledger line to the parent: $(cat "$MAIN/state/mate.digest" 2>/dev/null; cat "$WORLD/mate-watch.out")"
   [ ! -s "$WORLD/forge.log" ] || fail "ledger delivery invoked a forge command"
   pass "the real watcher poll delivers a child's terminal ledger line to the parent channel"
 }

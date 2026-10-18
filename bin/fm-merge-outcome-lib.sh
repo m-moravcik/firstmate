@@ -9,7 +9,8 @@
 #
 # The destination is the home's role, never the caller's choice:
 #   - a secondmate home reports upward on its parent channel, resolved and
-#     appended through bin/fm-parent-channel-lib.sh under its channel contract;
+#     appended through bin/fm-parent-channel-lib.sh under its channel contract,
+#     which routes a merge to the parent's digest so it wakes no one;
 #   - a main home reports to the captain through the durable wake queue.
 # A poll observed in a secondmate home also receives a local durable wake after
 # the upward write, so the mate can handle its own poll observation.
@@ -76,8 +77,9 @@ fm_merge_outcome_report() {  # <home> <state> <task-id> <pr-url> <origin> [autho
   number=$FM_PR_NUMBER
   [ -d "$state" ] && [ ! -L "$state" ] || return 1
 
-  if destination=$(fm_parent_channel_destination "$home" "$state"); then
-    line="done [key=merged-$id]: merged $id $FM_PR_URL$suffix"
+  line="done [key=merged-$id]: merged $id $FM_PR_URL$suffix"
+  if destination=$(fm_parent_channel_line_destination "$home" "$state" "$line"); then
+    :
   else
     self_rc=$?
     [ "$self_rc" -eq 1 ] || return 3

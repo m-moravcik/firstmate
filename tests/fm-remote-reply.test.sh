@@ -689,7 +689,9 @@ printf '# voice scout report\n\nfindings\n' > "$REMOTE/$INCIDENT_DOC"
 mirror_lines "done [key=child-outcome-voice-scout-done-ab12cd34]: child voice-scout done: report ready mode=scout report=$INCIDENT_DOC"
 cmp -s "$REMOTE/$INCIDENT_DOC" "$PARENT/data/remote-secondmates/ios/$INCIDENT_DOC" \
   || fail "the structured ledger offer did not deliver the finished report"
-assert_grep "report ready mode=scout report=data/remote-secondmates/ios/$INCIDENT_DOC" "$PARENT/state/ios.status" \
+# A child's done line is a routine child event, mirrored into the parent's
+# digest rather than the status stream (bin/fm-parent-channel-lib.sh).
+assert_grep "report ready mode=scout report=data/remote-secondmates/ios/$INCIDENT_DOC" "$PARENT/state/ios.digest" \
   "the structured ledger offer was not rewritten to its local copy"
 assert_no_document_decision "the reported incident left a document decision standing"
 pass "the reported incident raises no standing decision and still delivers the report"

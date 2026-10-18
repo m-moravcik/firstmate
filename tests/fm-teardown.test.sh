@@ -3078,15 +3078,15 @@ configure_secondmate_home() {  # <case-dir> <local|remote> [<parent-home>]
 }
 
 # Registering a PR inside a secondmate home publishes the child's ready line
-# with the canonical URL on the parent channel from fm-pr-check itself, once;
-# a main home publishes nothing.
+# with the canonical URL from fm-pr-check itself, once, into the parent's
+# digest because it is a routine child event; a main home publishes nothing.
 test_secondmate_pr_registration_publishes_ready_line() {
   local case_dir pr_head channel url
   url=https://github.com/example/repo/pull/7
   case_dir=$(make_case mate-pr-ready)
   configure_secondmate_home "$case_dir" local "$case_dir/parent"
   mkdir -p "$case_dir/parent/state"
-  channel="$case_dir/parent/state/mate-x.status"
+  channel="$case_dir/parent/state/mate-x.digest"
   write_meta "$case_dir" no-mistakes ship
   wt_commit_file "$case_dir" feature.txt hello "add feature"
   pr_head=$(git -C "$case_dir/wt" rev-parse HEAD)
@@ -3097,7 +3097,9 @@ test_secondmate_pr_registration_publishes_ready_line() {
     || fail "mate-pr-ready: fm-pr-check failed: $(cat "$case_dir/pr-check.err")"
   grep -q '^armed:' "$case_dir/pr-check.out" || fail "mate-pr-ready: poll was not armed"
   assert_grep "done [key=child-pr-task-x1]: child task-x1 PR ready: $url mode=no-mistakes" <(sed -E 's/ \[at=[0-9]+\]//' "$channel") \
-    "mate-pr-ready: the ready line did not reach the parent channel"
+    "mate-pr-ready: the ready line did not reach the parent digest"
+  [ ! -e "$case_dir/parent/state/mate-x.status" ] \
+    || fail "mate-pr-ready: a routine ready line still woke the parent: $(cat "$case_dir/parent/state/mate-x.status")"
   ! grep -q '^actionable:' "$case_dir/pr-check.err" \
     || fail "mate-pr-ready: registration reported a channel problem: $(cat "$case_dir/pr-check.err")"
   FM_HOME="$case_dir/home" FM_ROOT_OVERRIDE="$ROOT" FM_STATE_OVERRIDE="$case_dir/state" \
@@ -3116,7 +3118,7 @@ test_secondmate_pr_registration_publishes_ready_line() {
   ! grep -q '^actionable:' "$case_dir/pr-check.err" \
     || fail "main-pr-ready: a main home reported a channel problem"
   [ ! -e "$case_dir/state/parent-replies.status" ] || fail "main-pr-ready: a main home wrote a parent reply"
-  pass "fm-pr-check publishes the PR-ready line on a secondmate's parent channel once"
+  pass "fm-pr-check publishes the PR-ready line to a secondmate's parent digest once"
 }
 
 # With config/ready-after-green present, registering a no-mistakes PR in a
@@ -3214,7 +3216,7 @@ test_secondmate_home_teardown_delivers_final_line_or_refuses() {
   case_dir=$(make_case mate-teardown-delivers)
   configure_secondmate_home "$case_dir" local "$case_dir/parent"
   mkdir -p "$case_dir/parent/state"
-  channel="$case_dir/parent/state/mate-x.status"
+  channel="$case_dir/parent/state/mate-x.digest"
   write_meta "$case_dir" local-only ship
   wt_commit "$case_dir" "merged work"
   wt_head=$(git -C "$case_dir/wt" rev-parse HEAD)
@@ -3258,6 +3260,9 @@ test_secondmate_home_teardown_delivers_final_line_or_refuses() {
     && [ -d "$case_dir/tasktmp" ] \
     || fail "mate-teardown-refuses: refusal removed endpoint records before parent delivery"
   rmdir "$channel"
+  # Repaired, the stream is absent again, so the routine done line reaches the
+  # parent's digest.
+  channel="$case_dir/parent/state/mate-x.digest"
   err=$(FM_HOME="$case_dir/home" FM_STATE_OVERRIDE="$case_dir/state" \
     "$ROOT/bin/fm-wake-drain.sh" 2>&1 >/dev/null)
   seq=$(printf '%s\n' "$err" | sed -n 's/^WAKE_ACK_REQUIRED:.*--ack-through \([0-9][0-9]*\) --recovery-generation .*/\1/p')

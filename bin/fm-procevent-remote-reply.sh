@@ -32,10 +32,11 @@
 #
 # `self-announcing` declares this adapter's one-announcement contract to the
 # runner: every byte autohandle applies lands in the parent's state/<id>.status
-# stream, whose ordinary signal-scan announcement is durable, so a fully
-# autohandled capture needs - and gets - no `check` wake of its own. One remote
-# note therefore produces exactly one firstmate wake, through the same signal
-# classification a local secondmate's own status append gets, and a replayed
+# stream, whose ordinary signal-scan announcement is durable, or in the digest
+# beside it, which by design announces nothing, so a fully autohandled capture
+# needs - and gets - no `check` wake of its own. One remote note therefore
+# produces at most one firstmate wake, through the same signal classification
+# and digest routing a local secondmate's own append gets, and a replayed
 # capture whose source lines are already recorded adds no bytes and stays
 # completely quiet. Only a capture autohandle could NOT
 # fully apply is published as a `check` wake for the manual handler, and
@@ -47,7 +48,10 @@
 # classification, crew-state reconciliation, and pending-reply resolution - reads
 # that one stream. A remote secondmate must present the same model, so ingest
 # deduplicates content-bearing lines by normalized source identity, omits blank
-# separators, and leaves every semantic judgement to those same shared consumers.
+# separators, routes each line to the stream or its digest with the local
+# publisher's own rule (fm_parent_channel_line_is_digest in
+# bin/fm-parent-channel-lib.sh), and leaves every other semantic judgement to
+# those same shared consumers.
 # Correlation is
 # a per-line property that fm-pending-reply-lib.sh consumes; it is never a gate
 # on the stream. Gating on it here made a remote mate's own progress lines and
@@ -95,6 +99,8 @@ DOCUMENT_LOCAL_FAILURE=2
 . "$SCRIPT_DIR/fm-secondmate-registry-lib.sh"
 # shellcheck source=bin/fm-pending-reply-lib.sh
 . "$SCRIPT_DIR/fm-pending-reply-lib.sh"
+# shellcheck source=bin/fm-parent-channel-lib.sh
+. "$SCRIPT_DIR/fm-parent-channel-lib.sh"
 
 die() { printf 'error: %s\n' "$1" >&2; exit 1; }
 usage() { sed -n '2,66p' "$0" | sed 's/^# \{0,1\}//'; exit 2; }
@@ -509,17 +515,19 @@ append_status_once() { # <status-file> <line>
 }
 
 # Stage whole-stream additions by exact normalized source line, before pointer
-# rewriting. The caller appends status additions first and source identities
+# rewriting. A line already present on the parent stream or in its digest is not
+# staged again. The caller appends status additions first and source identities
 # second: reversing that order could record a line the parent never received.
 # The record lives outside cursor state and survives adapter retirement because
 # the parent status stream it describes survives that retirement too.
-stage_mirror_lines() { # <source> <rewritten> <source-record> <status> <status-additions> <source-additions>
+stage_mirror_lines() { # <source> <rewritten> <source-record> <status> <status-additions> <source-additions> <digest>
   LC_ALL=C awk \
     -v rewritten_file="$2" \
     -v source_record="$3" \
     -v status_file="$4" \
     -v status_additions="$5" \
-    -v source_additions="$6" '
+    -v source_additions="$6" \
+    -v digest_file="$7" '
     BEGIN {
       printf "%s", "" > status_additions
       printf "%s", "" > source_additions
@@ -527,6 +535,8 @@ stage_mirror_lines() { # <source> <rewritten> <source-record> <status> <status-a
       close(source_record)
       while ((getline line < status_file) > 0) present[line] = 1
       close(status_file)
+      while ((getline line < digest_file) > 0) present[line] = 1
+      close(digest_file)
     }
     {
       source = $0
@@ -555,7 +565,7 @@ stage_mirror_lines() { # <source> <rewritten> <source-record> <status> <status-a
 
 cmd_ingest() {
   local id=${1:-} result=${2:-} seq=${3:-} class blank payload normalized_payload schema status path from to from_hash to_hash payload_hash payload_bytes reason
-  local actual_bytes actual_hash line doc local_doc appended=0 cursor_already=0 lock status_file source_record tmp
+  local actual_bytes actual_hash line doc local_doc appended=0 cursor_already=0 lock status_file digest_file source_record tmp
   local fetch_rc append_rc offered='' delivered_map='' mirrored='' status_additions='' source_additions='' undelivered=''
   validate_id "$id"
   [ -f "$result" ] && [ ! -L "$result" ] || die "result file is unavailable or unsafe: $result"
@@ -600,6 +610,11 @@ cmd_ingest() {
   fi
   [ -f "$status_file" ] && [ ! -L "$status_file" ] \
     || { fm_lock_release "$lock"; die "parent status log is unsafe"; }
+  digest_file=$(fm_parent_channel_digest_path "$status_file")
+  if [ -L "$digest_file" ] || { [ -e "$digest_file" ] && [ ! -f "$digest_file" ]; }; then
+    fm_lock_release "$lock"
+    die "parent digest is unsafe: $digest_file"
+  fi
   source_record=$(mirrored_source_path "$id")
   if [ -L "$source_record" ] || { [ -e "$source_record" ] && [ ! -f "$source_record" ]; }; then
     fm_lock_release "$lock"
@@ -678,12 +693,20 @@ EOF
   : > "$source_additions" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
   stage_mirror_lines "$normalized_payload" "$mirrored" "$source_record" "$status_file" \
-    "$status_additions" "$source_additions" \
+    "$status_additions" "$source_additions" "$digest_file" \
     || { fm_lock_release "$lock"; die "cannot stage remote reply mirror identity"; }
-  cat "$status_additions" >> "$status_file" \
-    || { fm_lock_release "$lock"; die "cannot append remote reply"; }
-  appended=$(LC_ALL=C awk 'END { print NR + 0 }' "$status_additions") \
-    || { fm_lock_release "$lock"; die "cannot count appended remote replies"; }
+  # One line at a time, so a resolved line is routed against a stream that
+  # already carries any decision opened earlier in this same delta.
+  while IFS= read -r line || [ -n "$line" ]; do
+    if fm_parent_channel_line_is_digest "$line" "$status_file"; then
+      printf '%s\n' "$line" >> "$digest_file" \
+        || { fm_lock_release "$lock"; die "cannot append remote reply to the digest"; }
+    else
+      printf '%s\n' "$line" >> "$status_file" \
+        || { fm_lock_release "$lock"; die "cannot append remote reply"; }
+    fi
+    appended=$((appended + 1))
+  done < "$status_additions"
   cat "$source_additions" >> "$source_record" \
     || { fm_lock_release "$lock"; die "cannot commit remote reply mirror identity"; }
   # A note, never a decision: it stays visible without entering the open-decision

@@ -3,9 +3,10 @@
 # optionally acknowledge handled records,
 # annotate every unread line for validated signal status keys, surface unread
 # informational status lines, latest captain-facing statuses not covered by a
-# newer branch outcome, OPEN DECISIONS, captain-call record divergence, and on
+# newer branch outcome, OPEN DECISIONS, captain-call record divergence, on
 # a supervision-host home the supervision session's new and unprocessed
-# outcomes (BRANCH OUTCOMES), then assert liveness.
+# outcomes (BRANCH OUTCOMES), and with a presented heartbeat the unread
+# secondmate digest (bin/fm-secondmate-digest.sh), then assert liveness.
 #
 # Keep sequence-bound row consumption independent from generation-bound episode
 # retirement; docs/watcher-continuity.md owns the recovery contract.
@@ -49,6 +50,7 @@ PRESENTED_MAX=0
 ACK_FINGERPRINTS=
 ACK_NOTICE_FINGERPRINTS=
 PRESENTATION_LOCK_TIMEOUT=${FM_STATUS_PRESENTATION_LOCK_TIMEOUT:-10}
+SECONDMATE_DIGEST_MAX=40
 BRANCH_OUTCOMES_RC=0
 case "$PRESENTATION_LOCK_TIMEOUT" in ''|*[!0-9]*|0) PRESENTATION_LOCK_TIMEOUT=10 ;; esac
 
@@ -1096,5 +1098,10 @@ printf 'WAKE_ACK_REQUIRED: after handling completes run bin/fm-wake-drain.sh --a
 
 (print_status_presentation "$RAW_ROWS") || true
 print_branch_outcomes_section || BRANCH_OUTCOMES_RC=1
+# Routine secondmate child events wake no one (bin/fm-parent-channel-lib.sh);
+# a presented heartbeat is when they are read.
+if printf '%s\n' "$RAW_ROWS" | awk -F '\t' '$3 == "heartbeat" { found = 1 } END { exit !found }'; then
+  "$SCRIPT_DIR/fm-secondmate-digest.sh" --max "$SECONDMATE_DIGEST_MAX" || true
+fi
 assert_watcher_liveness
 exit "$BRANCH_OUTCOMES_RC"

@@ -1,7 +1,7 @@
 # Secondmate parent channel
 
-This note records why a secondmate home's captain-facing outcomes are delivered by scripts instead of by the mate model, and which script delivers each one.
-`bin/fm-parent-channel-lib.sh` owns the channel contract: where the channel lives, how a line is appended, and the return codes every publisher shares.
+This note records why a secondmate home's captain-facing outcomes are delivered by scripts instead of by the mate model, which script delivers each one, and which of them wake the parent.
+`bin/fm-parent-channel-lib.sh` owns the channel contract: where the channel lives, how a line is appended, which lines go to the parent's digest instead of waking it, and the return codes every publisher shares.
 [`remote-secondmates.md`](remote-secondmates.md) owns the transport that carries the remote form of the channel back to the parent.
 
 ## The problem
@@ -20,17 +20,17 @@ The design goal is therefore: the parent channel must not depend on the model re
 The delivery rule has one sentence: the scripts report facts, the mate reports judgement.
 Every captain-facing outcome that leaves durable evidence in the mate home is published on the channel by the script that records that evidence, at record time or on the next supervision poll, and the charter reserves the mate's own appends for judgement.
 
-| Outcome | Durable evidence in the mate home | Published by |
-|---|---|---|
-| Ship child PR ready | the child's `done:` PR ready line, whose accepted spellings the publisher below owns; `pr=` in the child's record once registered | `bin/fm-inactive-reconcile.sh` on the next poll with the child's line; `bin/fm-pr-check.sh` at registration with the canonical URL, or after the green report when [`config/ready-after-green`](configuration.md#pr-ready-line-after-green-configready-after-green) is set |
-| Scout child findings | the child's `done:` line plus `data/<child>/report.md` | `bin/fm-inactive-reconcile.sh` on the next poll, with the report pointer |
-| Child failed | the child's `failed:` line | `bin/fm-inactive-reconcile.sh` on the next poll |
-| Child decision escalated to the captain | the task held for the captain in the mate backlog | `bin/fm-captain-hold.sh hold`, and its answer by `answer` |
-| PR merged | the merge poll or the mate's own merge | `bin/fm-merge-outcome-lib.sh` |
-| Child leaving the home | its final ledger line | `bin/fm-teardown.sh`, which refuses to remove the child while that line is undelivered |
-| Child ended silently | terminal current state with a silent ledger | the existing inactive-outcome scan in `bin/fm-inactive-reconcile.sh` |
-| Answer to a marked request | a correlated line guarded by the pending-reply record | `bin/fm-secondmate-report.sh`, which resolves the parent channel from the mate home; the pending-reply guard repairs a line stranded in the local mate's same-basename status file before recovery or escalation |
-| An outcome that exists only in the mate's reasoning | none | the charter and the `AGENTS.md` carve-outs only |
+| Outcome | Durable evidence in the mate home | Published by | Reaches the parent as |
+|---|---|---|---|
+| Ship child PR ready | the child's `done:` PR ready line, whose accepted spellings the publisher below owns; `pr=` in the child's record once registered | `bin/fm-inactive-reconcile.sh` on the next poll with the child's line; `bin/fm-pr-check.sh` at registration with the canonical URL, or after the green report when [`config/ready-after-green`](configuration.md#pr-ready-line-after-green-configready-after-green) is set | digest |
+| Scout child findings | the child's `done:` line plus `data/<child>/report.md` | `bin/fm-inactive-reconcile.sh` on the next poll, with the report pointer | digest |
+| Child failed | the child's `failed:` line | `bin/fm-inactive-reconcile.sh` on the next poll | wake |
+| Child decision escalated to the captain | the task held for the captain in the mate backlog | `bin/fm-captain-hold.sh hold`, and its answer by `answer` | wake for the hold; digest for the answer once the parent has closed that hold, otherwise wake |
+| PR merged | the merge poll or the mate's own merge | `bin/fm-merge-outcome-lib.sh` | digest |
+| Child leaving the home | its final ledger line | `bin/fm-teardown.sh`, which refuses to remove the child while that line is undelivered | digest for done, wake for failed |
+| Child ended silently | terminal current state with a silent ledger | the existing inactive-outcome scan in `bin/fm-inactive-reconcile.sh` | digest for done, wake for failed |
+| Answer to a marked request | a correlated line guarded by the pending-reply record | `bin/fm-secondmate-report.sh`, which resolves the parent channel from the mate home; the pending-reply guard repairs a line stranded in the local mate's same-basename status file before recovery or escalation | wake |
+| An outcome that exists only in the mate's reasoning | none | the charter and the `AGENTS.md` carve-outs only | wake |
 
 The ledger delivery reads files, plus a local git reachability check on a ship `done:` with no delivery record yet (`bin/fm-dod-lib.sh`): it calls no harness, no forge, and no current-state reader, so it is identical for every harness and runtime backend.
 Each delivery is keyed with the first eight hexadecimal characters of its receipt fingerprint and uses the shared append contract above, and the ledger path reuses the inactive scan's per-fingerprint receipts, so a replayed poll or restart cannot deliver an event twice while a genuinely new terminal event is delivered again.
@@ -41,6 +41,18 @@ Other correlated mate-home status lines remain wrong-home evidence, while a remo
 The mate home's own status scans treat that remote channel the same way: `status_scan_parent_channel_exclude` in `bin/fm-classify-lib.sh` resolves the outbound path through the same `bin/fm-parent-channel-lib.sh` binding, and the watcher's signal scan and heartbeat backstop, the away-mode daemon's catch-all scan, and the fleet-wide folds skip exactly that resolved path, never a file name.
 The remote reply adapter already mirrors every channel line into the parent home, so folding the channel again here would only spin spurious wakes and a phantom `parent-replies` task, while a `parent-replies.status` in a main home or in a local mate is an ordinary task log that keeps folding and waking.
 A missed-reply escalation includes the complete first sighting path and line number in readable shell-escaped form.
+
+## Wake or digest
+
+Delivery and waking are separate questions.
+Every line on a secondmate's status stream in the parent home wakes the parent, and on 2026-10-18 two mates woke their parent 3 to 15 times an hour, mostly with child PR-ready, merged, child-done, and answered-hold lines that needed nothing from it.
+The captain's rule is that only what needs immediate action or input wakes the parent: a captain question, a blocker, a failure, and the answer to work the parent handed over.
+The last column of the table above applies that rule, and `bin/fm-parent-channel-lib.sh` owns its exact form.
+A routine line is appended to `state/<mate-id>.digest` beside the stream instead, which no watcher scan, heartbeat backstop, decision fold, or away-mode catch-all reads, so it is delivered without a wake.
+The parent reads the digest when its drain presents a heartbeat, and on demand through `bin/fm-secondmate-digest.sh`, whose header owns the read position.
+An answered hold stays a wake while the parent's stream still holds that hold open, because only a line on the stream closes it in the parent's open-decision fold; once the parent's own answer has closed it, the mate's matching line is routine.
+A local mate routes each line when it publishes it, and the parent's remote reply adapter routes each mirrored line of a remote mate by the same rule, so both routes give the parent the same stream and digest.
+Because the routine facts no longer wake anyone, the charter tells the mate that a step needing the captain's word, such as a merge approval, still needs a captain hold or the mate's own line.
 
 ## What is deliberately not built
 
@@ -58,8 +70,9 @@ A missed-reply escalation includes the complete first sighting path and line num
 It also covers the registration-time ready line and its withholding until checks are green under `config/ready-after-green`.
 `tests/fm-brief.test.sh` pins the charter's channel rule.
 `tests/fm-pending-reply.test.sh` covers helper-selected local routing, remote-channel classification, same-basename restatement before false escalation, readable wrong-home diagnostics, and the rule that arbitrary mate-home sightings never acknowledge a reply.
+`tests/fm-parent-channel-digest.test.sh` covers the wake-or-digest routing against real local and remote fixtures: every routine publisher line landing in the digest and every waking one on the stream, an answered hold that stays on the stream until the parent closes it, a decision opened and answered inside one remote delta, the real watcher scan staying quiet on digest growth, the reader's read position, and the real drain presenting the digest only with a heartbeat.
 `tests/fm-parent-channel-scan-exclusion.test.sh` covers the home-shape-aware scan exclusion against real remote, main-home, and local-mate fixtures: the watcher signal scan, both heartbeat backstops, the fleet-wide folds, and the real `fm-wake-drain.sh` end to end.
 
 ## Live verification
 
-[`verification/secondmate-parent-channel.md`](verification/secondmate-parent-channel.md) records the dated live run: real tmux panes, both real watchers re-armed after each wake, and no model, with every delivered parent line and the parent wake it produced.
+[`verification/secondmate-parent-channel.md`](verification/secondmate-parent-channel.md) records the dated live run: both real watchers re-armed after each wake and no model, with every delivered parent line, whether it reached the stream or the digest, and the one parent wake the run produced.

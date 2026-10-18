@@ -540,7 +540,7 @@ A process-event source takes these steps:
 
 - It performs a non-destructive, cursor-anchored delta read.
 - It fetches the documents a line explicitly offers through the confined reader.
-- It mirrors content-bearing lines into the primary status channel.
+- It mirrors content-bearing lines into the primary status channel, routing a routine child event to the digest beside it by the local route's own rule ([secondmate-parent-channel.md](secondmate-parent-channel.md#wake-or-digest)).
 - It does not carry blank separators.
 
 A failed remote delta read or non-schema remote output is discarded before capture, so it emits no result, leaves the cursor unchanged, and keeps the source registered for retry and liveness recovery.

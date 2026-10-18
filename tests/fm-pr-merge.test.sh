@@ -3200,19 +3200,24 @@ test_secondmate_merge_reports_upward_once() {
 }
 
 test_secondmate_merge_reports_on_the_local_route() {
-  local case_dir parent_status url
+  local case_dir parent_status parent_digest url
   url=https://github.com/example/repo/pull/62
   case_dir=$(make_home_case secondmate-merge-local local "$TMP_ROOT/secondmate-merge-local/parent")
   mkdir -p "$TMP_ROOT/secondmate-merge-local/parent/state"
   add_gh_mocks "$case_dir" 6666666666666666666666666666666666666666
   : >"$case_dir/gh-axi.log"
   parent_status="$TMP_ROOT/secondmate-merge-local/parent/state/mate-x.status"
+  parent_digest="$TMP_ROOT/secondmate-merge-local/parent/state/mate-x.digest"
 
   FM_TEST_HOME="$case_dir/home" run_pr_merge "$case_dir" task-x1 "$url" \
     >"$case_dir/stdout" 2>"$case_dir/stderr" || fail "secondmate-merge-local: merge failed"
 
-  assert_grep "done [key=merged-task-x1]: merged task-x1 $url" <(sed -E 's/ \[at=[0-9]+\]//' "$parent_status") \
-    "secondmate-merge-local: the landed PR did not reach the parent home's channel"
+  # A merge is a routine child event: it reaches the parent's digest, not the
+  # status stream every parent wake comes from (bin/fm-parent-channel-lib.sh).
+  assert_grep "done [key=merged-task-x1]: merged task-x1 $url" <(sed -E 's/ \[at=[0-9]+\]//' "$parent_digest") \
+    "secondmate-merge-local: the landed PR did not reach the parent home's digest"
+  assert_no_grep "merged-task-x1" "$parent_status" \
+    "secondmate-merge-local: a routine merge still woke the parent"
   [ ! -e "$case_dir/state/parent-replies.status" ] \
     || fail "secondmate-merge-local: a local-route report also wrote the remote reply channel"
   pass "a locally routed secondmate home reports the landed PR into its parent's own channel"

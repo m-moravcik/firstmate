@@ -38,7 +38,27 @@
 #     mirrors line for line into that same parent file
 #     (docs/remote-secondmates.md).
 # The parent watcher classifies lines there exactly as it classifies any
-# crewmate's status stream, so a captain-relevant line becomes a parent wake.
+# crewmate's status stream, and every line on a secondmate's stream wakes the
+# parent.
+#
+# THE DIGEST. A wake costs the parent a whole turn, and most published facts
+# need nothing from it: on 2026-10-18 two mates woke their parent 3 to 15 times
+# an hour, mostly with child PR-ready, merged, child-done, and released-hold
+# lines. So only what needs the parent wakes it: a captain question
+# (needs-decision), a blocker, a failure, and the answer to work the parent
+# handed over (a line carrying a corr= token). fm_parent_channel_line_is_digest
+# is the one routing rule. A routine child event - a done line keyed child-pr-,
+# merged-, child-outcome-, or inactive-outcome-, or a resolved captain-hold-
+# line whose decision the parent's stream no longer holds open - is appended to
+# state/<mate-id>.digest beside that stream instead. The digest is not a
+# .status file, so no watcher scan, heartbeat backstop, decision fold, or
+# away-mode catch-all reads it; bin/fm-secondmate-digest.sh presents it on a
+# heartbeat drain and on demand. A resolved line whose decision is still open
+# stays on the stream, because only there does the parent's fold close it, and
+# a line already recorded on the stream stays there so a retry deduplicates.
+# A local route routes each line here at publish time. A remote route still
+# writes every line to its own channel, and the parent's mirror routes each one
+# with this same rule (bin/fm-procevent-remote-reply.sh).
 #
 # Line syntax and retry equivalence are owned by fm-classify-lib.sh.
 # An existing destination must be a regular, non-symlinked file; a missing one
@@ -185,13 +205,60 @@ _fm_parent_channel_latest_for_key() {  # <path> <key> <out-var>
   printf -v "$3" '%s' "$__fm_pc_last"
 }
 
+# The digest beside the parent-home status stream <status-file>.
+fm_parent_channel_digest_path() {  # <status-file>
+  printf '%s.digest\n' "${1%.status}"
+}
+
+# 0 when <line> is a routine child event that belongs in the digest beside the
+# parent-home status stream <status-file> rather than on it (THE DIGEST above).
+# A correlation token always keeps a line on the stream, where the parent's
+# pending-reply record settles it, and so does a stream that exists but cannot
+# be read, so uncertainty fails toward a wake.
+fm_parent_channel_line_is_digest() {  # <line> <status-file>
+  local line=$1 status=$2 verb key open
+  [[ $line =~ corr=[A-Fa-f0-9]{16} ]] && return 1
+  if [ -e "$status" ] || [ -L "$status" ]; then
+    [ -f "$status" ] && [ -r "$status" ] && [ ! -L "$status" ] || return 1
+  fi
+  status_line_verb "$line" verb
+  key=$(_fm_decision_key "$line" '') || return 1
+  case "$verb:$key" in
+    done:child-pr-?*|done:merged-?*|done:child-outcome-?*|done:inactive-outcome-?*) ;;
+    "${FM_CLASSIFY_RESOLVE_VERB:-$FM_CLASSIFY_RESOLVE_VERB_DEFAULT}":captain-hold-?*)
+      open=$(status_open_decisions "$status" secondmate)
+      case $'\n'"$open" in *$'\n'"$key"$'\t'*) return 1 ;; esac
+      ;;
+    *) return 1 ;;
+  esac
+  ! status_event_recorded "$status" "$line"
+}
+
+# The file <line> from <home> is appended to, printed: the channel, or on a
+# local route the digest beside it for a routine child event. A remote route
+# always answers its own channel, which the parent's mirror routes line by
+# line. Return codes are the resolver's.
+fm_parent_channel_line_destination() {  # <home> <state> <line>
+  local home=$1 state=$2 line=$3 destination rc=0
+  destination=$(fm_parent_channel_destination "$home" "$state") || rc=$?
+  [ "$rc" -eq 0 ] || return "$rc"
+  # Resolve once more in this shell for the route, as
+  # fm_parent_channel_outbound_status does.
+  fm_parent_channel_destination "$home" "$state" >/dev/null || return 3
+  if [ "$FM_PARENT_CHANNEL_ROUTE" = local ] \
+    && fm_parent_channel_line_is_digest "$line" "$destination"; then
+    destination=$(fm_parent_channel_digest_path "$destination")
+  fi
+  printf '%s\n' "$destination"
+}
+
 # Publish one parent-facing line from <home>. See the return codes above.
 # With <key>, the line is a keyed state update: it is suppressed only when it
 # repeats that key's latest line, so a state that returns to an earlier value
 # (a hold re-dated A -> B -> A) is still delivered.
 fm_parent_channel_report() {  # <home> <state> <line> [key]
   local home=$1 state=$2 line=$3 key=${4:-} destination rc=0
-  destination=$(fm_parent_channel_destination "$home" "$state") || rc=$?
+  destination=$(fm_parent_channel_line_destination "$home" "$state" "$line") || rc=$?
   [ "$rc" -eq 0 ] || return "$rc"
   fm_parent_channel_append_once "$destination" "$(status_stamp_line "$line")" "$key" || return 4
 }
