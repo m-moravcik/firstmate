@@ -1,0 +1,22 @@
+## Phase D3-config-is-directory (11:04:46Z, scripts from ~/.no-mistakes/worktrees/38ab7cb04e39/01M5M5NXPGRYZC4CSDVTA3CPA6)
+
+### config/github-owner-accounts
+(a directory, not a file)
+
+### Watcher (bin/fm-watch.sh) result
+watcher absorbed the cycle and kept blocking (no wake within 25s); stopped by its recorded pid 90991
+
+### gh command lines the observer ran (argv as received by the gh router)
+
+### Requests the fake GitHub received from the real gh (identity = Authorization header)
+
+### Saved contribution records
+    {"task":"acme-fix","url":"https://github.com/acme-corp/private-repo/pull/42","error":"forge observation unavailable: owner identity configuration github-owner-accounts is unreadable","checked_at":"2026-10-23T11:04:47Z","head":"1111111111111111111111111111111111111111","state":"open","can_merge":false,"retired":null}
+    {"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","error":"forge observation unavailable: owner identity configuration github-owner-accounts is unreadable","checked_at":"2026-10-23T11:04:47Z","head":"2222222222222222222222222222222222222222","state":"open","can_merge":true,"retired":null}
+
+### Bearings contributions (captain-facing)
+    {"known":2,"checked":0,"counts":{"captain":0,"fleet":2,"maintainer":0,"nobody":0},"complete":false,"captain":[]}
+
+### gh active account file unchanged?
+    hosts.yml sha256 matches the pre-run snapshot (active account fmlab-personal unchanged)
+    lab files holding a lab token outside the gh store and the harness token file: none

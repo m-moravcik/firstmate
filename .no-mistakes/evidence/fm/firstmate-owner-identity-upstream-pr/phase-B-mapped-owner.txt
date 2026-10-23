@@ -1,0 +1,57 @@
+## Phase B-mapped-owner (11:02:16Z, scripts from ~/.no-mistakes/worktrees/38ab7cb04e39/01M5M5NXPGRYZC4CSDVTA3CPA6)
+
+### config/github-owner-accounts
+    # repository owner, gh account$
+    $
+    Acme-Corp jdoe_acme$
+
+### Watcher (bin/fm-watch.sh) result
+watcher absorbed the cycle and kept blocking (no wake within 25s); stopped by its recorded pid 35959
+
+### gh command lines the observer ran (argv as received by the gh router)
+    auth token --hostname github.com --user jdoe_acme
+    api repos/acme-corp/private-repo/pulls/42
+    api repos/acme-corp/private-repo/issues/42/comments?per_page=100 --paginate --slurp
+    api repos/acme-corp/private-repo/pulls/42/reviews?per_page=100 --paginate --slurp
+    api repos/acme-corp/private-repo/commits/1111111111111111111111111111111111111111/statuses?per_page=100 --paginate --slurp
+    api repos/acme-corp/private-repo/pulls/42/comments?per_page=100 --paginate --slurp
+    api repos/acme-corp/private-repo/commits/1111111111111111111111111111111111111111/check-runs?filter=all&per_page=100 --paginate --slurp
+    api repos/acme-corp/private-repo
+    pr view https://github.com/acme-corp/private-repo/pull/42 --json headRefOid,reviewDecision
+    api repos/fmlab-personal/public-repo/pulls/7
+    api repos/fmlab-personal/public-repo/issues/7/comments?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/pulls/7/reviews?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/pulls/7/comments?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/check-runs?filter=all&per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo
+    api repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/statuses?per_page=100 --paginate --slurp
+    pr view https://github.com/fmlab-personal/public-repo/pull/7 --json headRefOid,reviewDecision
+
+### Requests the fake GitHub received from the real gh (identity = Authorization header)
+    GET /repos/acme-corp/private-repo/pulls/42 as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo/pulls/42/reviews as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo/issues/42/comments as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo/commits/1111111111111111111111111111111111111111/check-runs as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo/pulls/42/comments as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo/commits/1111111111111111111111111111111111111111/statuses as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/acme-corp/private-repo as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    POST /graphql as=acme -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/pulls/7 as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/pulls/7/reviews as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/issues/7/comments as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/pulls/7/comments as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/statuses as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    GET /repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/check-runs as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+    POST /graphql as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false
+
+### Saved contribution records
+    {"task":"acme-fix","url":"https://github.com/acme-corp/private-repo/pull/42","error":null,"checked_at":"2026-10-23T11:02:17Z","head":"1111111111111111111111111111111111111111","state":"open","can_merge":false,"retired":null}
+    {"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","error":null,"checked_at":"2026-10-23T11:02:17Z","head":"2222222222222222222222222222222222222222","state":"open","can_merge":true,"retired":null}
+
+### Bearings contributions (captain-facing)
+    {"known":2,"checked":2,"counts":{"captain":1,"fleet":0,"maintainer":1,"nobody":0},"complete":true,"captain":[{"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","reason":"checks green; merge approval needed"}]}
+
+### gh active account file unchanged?
+    hosts.yml sha256 matches the pre-run snapshot (active account fmlab-personal unchanged)
+    lab files holding a lab token outside the gh store and the harness token file: none

@@ -1,0 +1,24 @@
+## Phase D1-malformed-extra-field (11:04:02Z, scripts from ~/.no-mistakes/worktrees/38ab7cb04e39/01M5M5NXPGRYZC4CSDVTA3CPA6)
+
+### config/github-owner-accounts
+    Acme-Corp jdoe_acme$
+    fmlab-personal fmlab-personal extra-field$
+
+### Watcher (bin/fm-watch.sh) result
+watcher exited rc=0 with a wake
+    check: /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.mjVst0/state/contributions.check.sh: contributions: observation unavailable for https://github.com/fmlab-personal/public-repo/pull/7 - owner identity configuration github-owner-accounts line 2 is malformed
+
+### gh command lines the observer ran (argv as received by the gh router)
+
+### Requests the fake GitHub received from the real gh (identity = Authorization header)
+
+### Saved contribution records
+    {"task":"acme-fix","url":"https://github.com/acme-corp/private-repo/pull/42","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 2 is malformed","checked_at":"2026-10-23T11:04:04Z","head":"1111111111111111111111111111111111111111","state":"open","can_merge":false,"retired":null}
+    {"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 2 is malformed","checked_at":"2026-10-23T11:04:04Z","head":"2222222222222222222222222222222222222222","state":"open","can_merge":true,"retired":null}
+
+### Bearings contributions (captain-facing)
+    {"known":2,"checked":0,"counts":{"captain":0,"fleet":2,"maintainer":0,"nobody":0},"complete":false,"captain":[]}
+
+### gh active account file unchanged?
+    hosts.yml sha256 matches the pre-run snapshot (active account fmlab-personal unchanged)
+    lab files holding a lab token outside the gh store and the harness token file: none
