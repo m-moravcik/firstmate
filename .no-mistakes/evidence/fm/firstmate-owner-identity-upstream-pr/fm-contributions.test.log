@@ -5,6 +5,9 @@ ok - newest check with no verdict is distinct from passing and pending
 ok - new maintainer comment wakes once and stays pending until acknowledged
 ok - new maintainer review wakes once and stays pending until acknowledged
 ok - new maintainer inline wakes once and stays pending until acknowledged
+ok - a listed collaborator bot and its re-raise remain review-bot fleet signals
+ok - review-bot watching is off until a home lists a bot
+ok - the armed allowlist is stable across working directories and policy toggles
 ok - ready-for-pr on a filed issue becomes a planning wake
 ok - a fresh open issue remains measured maintainer triage
 ok - an absent check lane remains missing across repeated observations
@@ -43,7 +46,7 @@ ok - a missing owner login is unavailable, stays in rotation and is never retire
 ok - a malformed owner identity configuration refuses every observation instead of using the ambient identity
 ok - real gh error shapes drive the intended retry decision and keep their error
 ok - a URL never inherits the previous URL read diagnostic
-jq: error (at /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-contributions.L6FFNf/after.json:1): null (null) cannot be matched, as it is not a string
+jq: error (at /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-contributions.cau09h/after.json:1): null (null) cannot be matched, as it is not a string
 ok - a URL owned by two tasks is observed once and every owner receives the result
 ok - a merged or closed contribution settles once, is not re-read, and never wakes again
 ok - a late owner inherits a terminal observation without a forge read or wake
@@ -68,3 +71,4 @@ ok - a closed pull request stops raising its threads
 ok - the unanswered re-raise and the review-thread read stay off unless a reply age is configured
 ok - arm copies a configured reply age into the generated check
 ok - a many-review PR stores only classified review fields and stays readable
+exit=0
