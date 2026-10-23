@@ -1,0 +1,200 @@
+=== S0 real gh token selection (fingerprints only) ===
+  gh auth token --user company-a: stored=5576d64e32f1cb1f with ambient GH_TOKEN=decoy set=5576d64e32f1cb1f
+  gh auth token --user company-b: stored=ece048e0a3a6e10f with ambient GH_TOKEN=decoy set=ece048e0a3a6e10f
+  gh auth token --user no-such-account-zz9: no oauth token found for github.com account no-such-account-zz9; exit=1
+  ambient read of the private repo: {"message":"Not Found","documentation_url":"https://docs.github.com/rest/repos/repos#get-a-repository","status":"404"}gh: Not Found (HTTP 404)
+  company-b push on the shared repo: true
+  m-moravcik push on the shared repo: true
+  before:
+  active gh login: m-moravcik
+  gh hosts.yml mtime: 1792705607
+
+=== S1 no config: the private contribution reads as 404 with the ambient login (the reported bug) ===
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - core read exited 1 with 24s of budget left: gh: Not Found (HTTP 404)
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: core read exited 1 with 24s of budget left: gh: Not Found (HTTP 404)","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+
+=== S2 owner mapped (mixed case owner, comment and blank line): the private contribution is observed ===
+  config/github-owner-accounts:
+    | # repository owner, gh account$
+    | $
+    | COMPANY-A company-a$
+$ bash state/contributions.check.sh
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user company-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/reviews?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/issues/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/statuses?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/check-runs?filter=all&per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh pr view https://github.com/company-a/private-repo-a/pull/6 --json headRefOid,reviewDecision
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":false}
+  files in the lab holding any stored token: 0
+  second poll (rotation keeps reading it fresh):
+$ bash state/contributions.check.sh
+  [check exit=0]
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":false}
+
+=== S3 mapped and unmapped owners in one home: only the named owner changes identity ===
+  config/github-owner-accounts:
+    | company-a company-a$
+$ bash state/contributions.check.sh
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user company-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/issues/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/reviews?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/check-runs?filter=all&per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/statuses?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh pr view https://github.com/company-a/private-repo-a/pull/6 --json headRefOid,reviewDecision
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10/reviews?per_page=100 --paginate --slurp
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/issues/10/comments?per_page=100 --paginate --slurp
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/commits/<sha>/check-runs?filter=all&per_page=100 --paginate --slurp
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10/comments?per_page=100 --paginate --slurp
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/commits/<sha>/statuses?per_page=100 --paginate --slurp
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh pr view https://github.com/company-b/shared-repo-b/pull/10 --json headRefOid,reviewDecision
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":false}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":true}
+
+=== S4 merge-authority boundary: the shared repo read as its owner account records can_merge false ===
+  config/github-owner-accounts:
+    | company-b company-b$
+$ bash state/contributions.check.sh
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user company-b
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/issues/10/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/commits/<sha>/statuses?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/commits/<sha>/check-runs?filter=all&per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10/reviews?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b
+  gh call: GH_TOKEN=company-b argv-leak=no GH_CONFIG_DIR=unset | gh pr view https://github.com/company-b/shared-repo-b/pull/10 --json headRefOid,reviewDecision
+  record: {"task":"t1","url":"https://github.com/company-b/shared-repo-b/pull/10","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":false}
+
+=== S5 named account has no stored login: unavailable, no fallback, stays in rotation, never retired ===
+  config/github-owner-accounts:
+    | company-a no-such-account-zz9$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - identity read for no-such-account-zz9 exited 1 with 25s of budget left: no oauth token found for github.com account no-such-account-zz9
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user no-such-account-zz9
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: identity read for no-such-account-zz9 exited 1 with 25s of budget left: no oauth token found for github.com account no-such-account-zz9","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  second poll (same episode: silent, still attempted):
+$ bash state/contributions.check.sh
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user no-such-account-zz9
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: identity read for no-such-account-zz9 exited 1 with 25s of budget left: no oauth token found for github.com account no-such-account-zz9","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+
+=== S6 underscore account name (EMU form) is accepted as well formed ===
+  config/github-owner-accounts:
+    | company-a jdoe_acme$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - identity read for jdoe_acme exited 1 with 25s of budget left: no oauth token found for github.com account jdoe_acme
+  [check exit=0]
+  gh call: ambient(no GH_TOKEN: active stored login) argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user jdoe_acme
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: identity read for jdoe_acme exited 1 with 25s of budget left: no oauth token found for github.com account jdoe_acme","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+
+=== S7 malformed or unreadable config refuses every URL, including the ambient-readable one ===
+--- S7.1
+  config/github-owner-accounts:
+    | owner_x company-a$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 1 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 1 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.2
+  config/github-owner-accounts:
+    | company-a$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 1 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 1 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.3
+  config/github-owner-accounts:
+    | company-a company-a extra$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 1 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 1 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.4
+  config/github-owner-accounts:
+    | -x company-a$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 1 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 1 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.5
+  config/github-owner-accounts:
+    | company-a company-a$
+    | COMPANY-A other$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 2 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 2 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 2 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 2 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.6
+  config/github-owner-accounts:
+    | company-a company-a\r$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts line 1 is malformed
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts line 1 is malformed
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts line 1 is malformed","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+--- S7.7
+  config/github-owner-accounts: (a directory)
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-a/private-repo-a/pull/6 - owner identity configuration github-owner-accounts is unreadable
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - owner identity configuration github-owner-accounts is unreadable
+  [check exit=0]
+  gh call: (none)
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":"forge observation unavailable: owner identity configuration github-owner-accounts is unreadable","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: owner identity configuration github-owner-accounts is unreadable","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+
+=== S8 an ambient GH_TOKEN in the watcher environment cannot hijack a mapped read ===
+  config/github-owner-accounts:
+    | company-a company-a$
+$ bash state/contributions.check.sh
+  out: contributions: observation unavailable for https://github.com/company-b/shared-repo-b/pull/10 - core read exited 1 with 23s of budget left: gh: Bad credentials (HTTP 401)
+  [check exit=0]
+  gh call: GH_TOKEN=decoy argv-leak=no GH_CONFIG_DIR=unset | gh auth token --hostname github.com --user company-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/issues/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/comments?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/pulls/6/reviews?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/check-runs?filter=all&per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a/commits/<sha>/statuses?per_page=100 --paginate --slurp
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-a/private-repo-a
+  gh call: GH_TOKEN=company-a argv-leak=no GH_CONFIG_DIR=unset | gh pr view https://github.com/company-a/private-repo-a/pull/6 --json headRefOid,reviewDecision
+  gh call: GH_TOKEN=decoy argv-leak=no GH_CONFIG_DIR=unset | gh api repos/company-b/shared-repo-b/pulls/10
+  record: {"task":"t1","url":"https://github.com/company-a/private-repo-a/pull/6","error":null,"checked":true,"retired":null,"state":"open","head_observed":true,"can_merge":false}
+  record: {"task":"t2","url":"https://github.com/company-b/shared-repo-b/pull/10","error":"forge observation unavailable: core read exited 1 with 23s of budget left: gh: Bad credentials (HTTP 401)","checked":true,"retired":null,"state":null,"head_observed":false,"can_merge":null}
+
+=== after all scenarios ===
+  active gh login: m-moravcik
+  gh hosts.yml mtime: 1792705607
+  files under every lab holding any stored token: 0
