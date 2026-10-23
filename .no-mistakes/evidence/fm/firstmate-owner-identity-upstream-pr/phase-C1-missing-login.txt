@@ -1,0 +1,40 @@
+## Phase C1-missing-login (11:03:04Z, scripts from ~/.no-mistakes/worktrees/38ab7cb04e39/01M5M5NXPGRYZC4CSDVTA3CPA6)
+
+### config/github-owner-accounts
+    acme-corp jdoe_missing$
+
+### Watcher (bin/fm-watch.sh) result
+watcher exited rc=0 with a wake
+    check: /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.mjVst0/state/contributions.check.sh: contributions: observation unavailable for https://github.com/acme-corp/private-repo/pull/42 - identity read for jdoe_missing exited 1 with 20s of budget left: no oauth token found for github.com account jdoe_missing
+
+### gh command lines the observer ran (argv as received by the gh router)
+    auth token --hostname github.com --user jdoe_missing
+    api repos/fmlab-personal/public-repo/pulls/7
+    api repos/fmlab-personal/public-repo/pulls/7/comments?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/issues/7/comments?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/check-runs?filter=all&per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/pulls/7/reviews?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/statuses?per_page=100 --paginate --slurp
+    api repos/fmlab-personal/public-repo
+    pr view https://github.com/fmlab-personal/public-repo/pull/7 --json headRefOid,reviewDecision
+
+### Requests the fake GitHub received from the real gh (identity = Authorization header)
+    GET /repos/fmlab-personal/public-repo/pulls/7 as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo/issues/7/comments as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo/pulls/7/reviews as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/statuses as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo/commits/2222222222222222222222222222222222222222/check-runs as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    GET /repos/fmlab-personal/public-repo/pulls/7/comments as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+    POST /graphql as=personal -> 200  token-in-any-argv=false token-in-product-tmp-file=false live-observer-tmp=fm-contributions.u2Lzgi
+
+### Saved contribution records
+    {"task":"acme-fix","url":"https://github.com/acme-corp/private-repo/pull/42","error":"forge observation unavailable: identity read for jdoe_missing exited 1 with 20s of budget left: no oauth token found for github.com account jdoe_missing","checked_at":"2026-10-23T11:03:05Z","head":"1111111111111111111111111111111111111111","state":"open","can_merge":false,"retired":null}
+    {"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","error":null,"checked_at":"2026-10-23T11:03:05Z","head":"2222222222222222222222222222222222222222","state":"open","can_merge":true,"retired":null}
+
+### Bearings contributions (captain-facing)
+    {"known":2,"checked":1,"counts":{"captain":1,"fleet":1,"maintainer":0,"nobody":0},"complete":false,"captain":[{"task":"personal-fix","url":"https://github.com/fmlab-personal/public-repo/pull/7","reason":"checks green; merge approval needed"}]}
+
+### gh active account file unchanged?
+    hosts.yml sha256 matches the pre-run snapshot (active account fmlab-personal unchanged)
+    lab files holding a lab token outside the gh store and the harness token file: none

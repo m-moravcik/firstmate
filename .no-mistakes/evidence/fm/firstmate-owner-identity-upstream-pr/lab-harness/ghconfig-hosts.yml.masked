@@ -1,0 +1,16 @@
+github.com:
+    users:
+        fmlab-personal:
+            oauth_token: <fmlab-personal-token>
+        jdoe_acme:
+            oauth_token: <jdoe_acme-token>
+    git_protocol: https
+    user: fmlab-personal
+    oauth_token: <fmlab-personal-token>
+github.localhost:
+    users:
+        fmlab-personal:
+            oauth_token: <fmlab-personal-token>
+    git_protocol: https
+    user: fmlab-personal
+    oauth_token: <fmlab-personal-token>

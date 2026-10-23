@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# fm-lab router: the machine's real gh; only github.com API traffic is routed to the lab's fake GitHub.
+set -u
+REAL_GH=/opt/homebrew/bin/gh
+printf '%s\n' "$*" >> "$FMLAB_ARGV_LOG"
+route=(env GH_HOST=github.localhost HTTP_PROXY="$FMLAB_PROXY" http_proxy="$FMLAB_PROXY" HTTPS_PROXY="$FMLAB_PROXY" https_proxy="$FMLAB_PROXY" NO_PROXY= no_proxy=)
+case "${1:-}" in
+  auth) exec "$REAL_GH" "$@" ;;
+  api) exec "${route[@]}" "$REAL_GH" "$@" ;;
+  pr)
+    if [ "${2:-}" = view ] && [[ "${3:-}" =~ ^https://github\.com/([^/]+)/([^/]+)/pull/([0-9]+)$ ]]; then
+      o=${BASH_REMATCH[1]} r=${BASH_REMATCH[2]} n=${BASH_REMATCH[3]}
+      shift 3
+      exec "${route[@]}" "$REAL_GH" pr view "$n" -R "github.localhost/$o/$r" "$@"
+    fi ;;
+esac
+printf 'fm-lab router: unrouted gh call: %s\n' "$*" >&2
+exit 97
