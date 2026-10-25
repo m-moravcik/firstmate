@@ -1,0 +1,30 @@
+board: /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.SV0Xpr/.lavish/bearings-board.html
+session:
+  file: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.SV0Xpr/.lavish/bearings-board.html
+  url: "http://127.0.0.1:4387/session/0123456789abcdef"
+  status: opened
+session: live
+served: /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.SV0Xpr/.lavish/bearings-board.html
+bound: lavish-c3d8539e5f5b0196
+armed: lavish-c3d8539e5f5b0196
+[build exit=0]
+-- injected reconcile option (from built board payload):
+[
+  {
+    "value": "yes",
+    "label": "Deploy",
+    "hint": "recommended"
+  },
+  {
+    "value": "no",
+    "label": "Not yet"
+  },
+  {
+    "value": "reconcile",
+    "label": "Reconcile",
+    "hint": "Not an answer: firstmate re-checks the latest state, closes this only if it is moot, and otherwise asks again"
+  }
+]
+SOURCE                       ADAPTER      OWNER      PENDING
+lavish-c3d8539e5f5b0196      lavish       live       1
+LAB=/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.SV0Xpr
