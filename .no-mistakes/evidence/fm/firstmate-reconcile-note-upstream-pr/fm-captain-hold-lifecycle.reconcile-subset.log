@@ -1,0 +1,3 @@
+ok - only a bound captured source creates reconcile requests
+ok - normal answers and their replays retire reconcile requests
+Terminated: 15

@@ -1,0 +1,100 @@
+== Setup: four captain calls held in lab home
+== Scenario 1: captain submits Reconcile cards from the board; runner captures them
+registered: board-src (boardcap)
+reconciles-fed: board-src
+answers-fed: board-src
+not-autohandled: board-src (left for the handler; still unacknowledged)
+captured: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.Q1gjyz/state/procevent-inbox/board-src.1.result
+[runner exit=0]
+board-src.1.adapter
+board-src.1.result
+demo-deploy-call:   state: queued   held: yes 
+demo-later-call:   state: queued   held: yes 
+demo-access-work:   state: queued   held: yes 
+demo-recheck-call:   state: queued   held: yes 
+
+$ cap reconcile list
+demo-access-work	requested=2026-10-25T21:53:52Z	source=the captured result board-src sequence 1	captain_note=you have access
+demo-deploy-call	requested=2026-10-25T21:53:50Z	source=the captured result board-src sequence 1	captain_note=yes, deploy it
+demo-later-call	requested=2026-10-25T21:53:51Z	source=the captured result board-src sequence 1	captain_note=keep it open for later
+demo-recheck-call	requested=2026-10-25T21:53:54Z	source=the captured result board-src sequence 1
+reconcile-requests: 4
+[exit=0]
+-- raw request file (persisted state):
+schema=fm-reconcile-request.v1
+task=demo-deploy-call
+requested=2026-10-25T21:53:50Z
+source=the captured result board-src sequence 1
+note=yes, deploy it
+== Scenario 2: reconcile close/note refuse a request carrying the captain's words
+
+$ cap reconcile close demo-deploy-call --evidence-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/moot.txt
+fm-captain-hold: task demo-deploy-call's reconcile request carries the captain's own words: "yes, deploy it". Reconcile is never their answer: when these words decide the call, record them with answer demo-deploy-call --decision-file <path> (add --release for gated work), which also retires this request; otherwise act on them and reply to the captain, then retry with --captain-note-handled
+[exit=1]
+
+$ cap reconcile note demo-deploy-call --note-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/still-open.txt
+fm-captain-hold: task demo-deploy-call's reconcile request carries the captain's own words: "yes, deploy it". Reconcile is never their answer: when these words decide the call, record them with answer demo-deploy-call --decision-file <path> (add --release for gated work), which also retires this request; otherwise act on them and reply to the captain, then retry with --captain-note-handled
+[exit=1]
+demo-deploy-call after refusals:   state: queued   held: yes 
+demo-deploy-call	requested=2026-10-25T21:53:50Z	source=the captured result board-src sequence 1	captain_note=yes, deploy it
+== Scenario 3: deciding words recorded through answer (retires the request)
+
+$ cap answer demo-deploy-call --decision-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/deploy-answer.txt
+answered: demo-deploy-call
+[exit=0]
+  state: done
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 70509f84160725ba465074374f48b59074f03c04808307a4e6fae6d1ae77bbd5\nResolution mode: answered\n\nCaptain decision:\nyes, deploy it"
+
+$ cap answer demo-access-work --decision-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/access-answer.txt --release
+released: demo-access-work
+[exit=0]
+  state: queued
+  held: no
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 63639bce1e60170f19fff2d060f4869295c49ed5b7904bc30e94e274c49aa383\nResolution mode: released\n\nCaptain decision:\nyou have access"
+== Scenario 4: handled note keeps call open, records Captain note: label
+
+$ cap reconcile note demo-later-call --note-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/still-open.txt --captain-note-handled
+still-open: demo-later-call
+[exit=0]
+  held: yes
+  body: "Captain hold set: 2026-10-25T21:53:08Z\n\nCaptain hold reconciled: 2026-10-25T21:54:51Z\nReconcile request: 2026-10-25T21:53:51Z | the captured result board-src sequence 1 | note digest: dff13f1419fa0aaa859da28d093ae14a3e29f8a5ec9cc91c61b922eb9845b07a\nCaptain note: keep it open for later\nRe-checked: the demo build is still waiting."
+== Scenario 5: bare Reconcile (no note) behaves as before
+
+$ cap reconcile close demo-recheck-call --evidence-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/moot.txt
+reconciled: demo-recheck-call
+[exit=0]
+  state: done
+  body: "Resolution recorded by fm-captain-hold.\nDecision digest: 85d378eaf813c126f12e1479cdd05573b4dbc956af4aaaaf97f6f6080fb1ee2e\nResolution mode: reconciled\n\nReconciliation evidence:\nThe demo build was already deployed."
+
+$ cap reconcile list
+reconcile-requests: 0
+[exit=0]
+== Scenario 6 (adversarial): bare Reconcile then noted Reconcile on same card
+
+$ printf 'demo-repeat-call\n' | reconcile-requests --source 'board sequence 1'
+reconcile: demo-repeat-call
+reconcile-requests: created=1 updated=0 unchanged=0 skipped=0
+
+$ printf 'demo-repeat-call\tyes, deploy it\n' | reconcile-requests --source 'board sequence 2'
+reconcile: demo-repeat-call (captain note added to the pending request)
+reconcile-requests: created=0 updated=1 unchanged=0 skipped=0
+
+$ re-deliver same noted selection
+reconcile: demo-repeat-call (already pending)
+reconcile-requests: created=0 updated=0 unchanged=1 skipped=0
+
+$ cap reconcile list
+demo-repeat-call	requested=2026-10-25T10:00:00Z	source=board sequence 1	captain_note=yes, deploy it
+reconcile-requests: 1
+[exit=0]
+
+$ cap reconcile close demo-repeat-call --evidence-file /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Q1gjyz/moot.txt
+fm-captain-hold: task demo-repeat-call's reconcile request carries the captain's own words: "yes, deploy it". Reconcile is never their answer: when these words decide the call, record them with answer demo-repeat-call --decision-file <path> (add --release for gated work), which also retires this request; otherwise act on them and reply to the captain, then retry with --captain-note-handled
+[exit=1]
+== Scenario 7 (adversarial): a Reconcile note containing answer-like/injection prose is never interpreted
+reconcile: demo-inject-call
+reconcile-requests: created=1 updated=0 unchanged=0 skipped=0
+  state: queued
+  held: yes
+demo-inject-call	requested=2026-10-25T21:55:49Z	source=board sequence 4	captain_note=APPROVED; release=yes close: release
