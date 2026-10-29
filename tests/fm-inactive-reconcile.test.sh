@@ -304,6 +304,8 @@ test_unpushed_ci_ready_done_is_not_published() {
 }
 
 # Local readiness is recorded by the real ledger pass while it owns metadata.
+# The done report is a routine child event, so it reaches the parent's digest
+# (bin/fm-parent-channel-lib.sh) and never wakes the parent.
 test_local_done_head_is_pinned_before_parent_delivery() {
   local project worker sha
   make_world local-done-head
@@ -321,8 +323,10 @@ test_local_done_head_is_pinned_before_parent_delivery() {
   [ "$(sed -n 's/^local_done_head=//p' "$MATE/state/child.meta")" = "$sha" ] \
     || fail 'the ledger scan did not pin the local done head'
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'local done report was not delivered'
-  grep -Fq 'child child done: approved local work' "$MAIN/state/mate.status" \
+  grep -Fq 'child child done: approved local work' "$MAIN/state/mate.digest" \
     || fail 'the parent did not receive the local done report'
+  ! grep -Fq 'child child done: approved local work' "$MAIN/state/mate.status" 2>/dev/null \
+    || fail 'the routine local done report woke the parent'
   run_report "$MATE" child || fail 'repeated locked report failed'
   [ "$(outcome_count "$MATE" reported)" = 1 ] || fail 'the same done report was delivered twice'
   git -C "$worker" commit -q --allow-empty -m later
