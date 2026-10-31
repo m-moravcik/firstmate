@@ -36,10 +36,18 @@
 # bin/fm-pr-check.sh (PR registration), and bin/fm-inactive-reconcile.sh
 # (secondmate ledger-first publish of a child done). A ship `done:` is not
 # accepted while the named head exists only in the worker's disposable copy.
-# The check tests that head, not whether some branch moved. In no-mistakes
-# mode the pre-validation `done: {summary}` is the pipeline handoff and is
-# not gated; only the later CI-ready `done: PR <url> checks green` is, or on a
-# Gerrit project the later `done: PR <change url> published for review`. The
+# The check tests that head, not whether some branch moved. A no-mistakes
+# worker starts its own validation run as soon as its work is committed, under
+# the run admission rules its brief names (fm_nm_self_start_block); nobody
+# starts the run for it, so its only done: is the ready report the run leads
+# to: `done: PR <url> checks green`, or on a Gerrit project
+# `done: PR <change url> published for review`, and those are gated. A
+# no-mistakes done: that names neither a PR nor a published change while the
+# task records no pr= - the pre-validation handoff of a worker launched on an
+# older brief - reports no validated work: the gate refuses it, whatever its
+# head, with the FM_NM_VALIDATION_NOT_STARTED component (bin/fm-classify-lib.sh)
+# that the watcher's validation-start reminder reads. Any other done: without
+# the ready wording stays ungated. The
 # named head is the worker copy's HEAD, except that a done naming the task's
 # recorded pr= passes when the forge holds that head: a forge-reported
 # pr_head= in no-mistakes mode, or a recorded merge
@@ -422,6 +430,21 @@ fm_ask_user_escalation_block() {  # <data-dir> <task-id>
 EOF
 }
 
+# Who starts a no-mistakes run, shared by every no-mistakes block: the worker
+# itself, in the same turn as its commit, never a pre-validation done: that
+# waits for firstmate. Run admission is a home or project rule (a validation
+# seat, an admission script, a CPU or heavy-step slot, extra --skip flags), so
+# the contract points at where the brief names it rather than restating any one
+# home's mechanism, and an admission wait is a declared pause, never a done.
+fm_nm_self_start_block() {
+  cat <<'EOF'
+As soon as the work is implemented, tested, and committed on your branch, start /no-mistakes yourself in the same turn: load the no-mistakes skill and follow the driving rules below.
+Do not append `done:`, stop, or wait for firstmate before the run; nobody else starts it, and your only `done:` for this task is the ready report at the end of this section.
+Before you start a run, and again before every rerun, retry, or resume, obey each run admission rule that this brief's home additions or the project's own instructions name - for example a validation seat, an admission script and the exact start command it prints, a CPU or heavy-step slot, or project-specific `--skip` flags.
+When admission tells you to wait, append a `paused:` line naming what will admit you, using the brief's status-reporting rule, and start the run as soon as it does; an admission wait is never a `done:`.
+EOF
+}
+
 # The forge-independent middle of the no-mistakes contract: how a worker drives
 # the pipeline, what `--intent` may carry, and the two firstmate-specific rules.
 # Written once; only the two sentences about a green PR depend on the forge,
@@ -513,10 +536,11 @@ Delivery contract: mode=no-mistakes$suffix pr=manual
 Ship branch: $branch
 This project's pull-request text is written by hand: the pipeline's \`pr\` step would rewrite the title and body you write on every validated push, so **no-mistakes runs here as a validation pass that pushes the branch**, and you then open the PR yourself.
 Pass \`--skip pr,ci\` on every \`no-mistakes axi run\` for this task, and skip nothing else: \`review\`, \`test\`, \`document\`, \`lint\`, and \`push\` still run, and \`ci\` has no pipeline-opened PR to watch.
-The task is complete only when committed on your branch.
-When you believe it is complete, append \`done [at=<epoch>]: {summary}\` to the status file and stop.
-Firstmate will then instruct you to run /no-mistakes to validate and push.
-That first \`done:\` is the handoff that starts the pipeline, which owns the push; it is not a request to push from this copy.
+Commit the work on your branch; the task is complete only when the run below has validated and pushed it and your PR's checks are green.
+EOF
+  fm_nm_self_start_block
+  cat <<EOF
+The pipeline owns the push; never push from this copy.
 ${nm_base}
 EOF
   fm_nm_driving_block no-ci
@@ -584,10 +608,11 @@ Ship branch: $branch
 This project's review server is Gerrit: it has no pull requests and no forge CI the pipeline can watch, so **no-mistakes runs here as a review pass that ends at a ready branch**, and you then publish that branch as one change.
 Pass \`--skip push,pr,ci\` on every \`no-mistakes axi run\` for this task, and skip nothing else: \`review\`, \`test\`, \`document\`, and \`lint\` are the whole point of the run.
 Those three are the only steps that reach a forge, and skipping them is a supported outcome, not a degraded one.
-The task is complete only when committed on your branch.
-When you believe it is complete, append \`done [at=<epoch>]: {summary}\` to the status file and stop.
-Firstmate will then instruct you to run /no-mistakes to validate.
-That first \`done:\` is the handoff that starts the pipeline; it is not a request to publish.
+Commit the work on your branch; the task is complete only when the run below has passed and you have published its result as one change.
+EOF
+      fm_nm_self_start_block
+      cat <<EOF
+Starting the run is not a request to publish: publish only after it passes, as described below.
 
 EOF
       fm_nm_driving_block "$forge"
@@ -678,10 +703,11 @@ EOF
 # Definition of done
 Delivery contract: mode=no-mistakes$contract_forge$contract_consent
 Ship branch: $branch
-The task is complete only when committed on your branch.
-When you believe it is complete, append \`done [at=<epoch>]: {summary}\` to the status file and stop.
-Firstmate will then instruct you to run /no-mistakes to validate and ship a PR.
-That first \`done:\` is the handoff that starts the pipeline, which owns the push; it is not a request to push from this copy.
+Commit the work on your branch; the task is complete only when the run below has validated it and its PR's checks are green.
+EOF
+      fm_nm_self_start_block
+      cat <<EOF
+The pipeline owns the push; never push from this copy.
 ${nm_base}
 EOF
       fm_nm_driving_block "$forge"
@@ -790,8 +816,24 @@ fm_dod_accept_external_review_done() {  # <worktree> <project> <line> <meta>
   return 1
 }
 
+# 0 when <line> is a no-mistakes ship done: that reports no validated work: its
+# note names neither a PR nor a published change, and <meta> (absent counts as
+# none) records no pr=, so no run of this task ever reported a result.
+# Empty mode is treated as no-mistakes, the unregistered-project default.
+fm_dod_done_reports_no_validation() {  # <kind> <mode> <line> [<meta>]
+  local note
+  [ "$1" = ship ] || return 1
+  case "$2" in no-mistakes|'') ;; *) return 1 ;; esac
+  [ "$(status_line_verb "$3")" = "done" ] || return 1
+  note=$(status_line_note "$3")
+  fm_dod_note_has_pr_reference "$note" && return 1
+  fm_dod_note_reports_published_change "$note" && return 1
+  [ -z "${4:-}" ] || [ -z "$(fm_dod_meta_value "$4" pr)" ]
+}
+
 # 0 when this ship done: is one the named-head gate must accept or refuse.
-# no-mistakes pre-validation done: is the pipeline handoff and is not gated.
+# In no-mistakes mode that is only the ready report; a done: reporting no
+# validated work is refused before this test (fm_dod_done_reports_no_validation).
 # Empty mode is treated as no-mistakes, the unregistered-project default.
 fm_dod_should_gate_ship_done() {  # <kind> <mode> <line>
   local note
@@ -980,7 +1022,9 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # names the task's recorded PR whose head the forge holds, when it names a
 # Gerrit change whose current patch set carries the worker copy's HEAD tree, or otherwise when its named
 # head - the worker copy's HEAD - is reachable outside that disposable copy. A
-# published-for-review report that names no Gerrit change is refused.
+# published-for-review report that names no Gerrit change is refused, and so is
+# a no-mistakes done: that reports no validated work
+# (fm_dod_done_reports_no_validation), before any head is read.
 # There is no free-text SHA scan: a SHA that happens to appear in the note is
 # not the named head. 1 when
 # the claim is refused; stdout then holds a one-line reason and no other
@@ -989,6 +1033,10 @@ fm_dod_named_head_reachable_outside_worktree() {  # <worktree> <project> <mode> 
 # (bin/fm-fleet-snapshot.sh), so the marker is read from <state>.
 fm_dod_accept_ship_done() {  # <kind> <mode> <worktree> <project> <line> [<state> <id> <meta> [meta-locked]]
   local kind=$1 mode=$2 wt=$3 project=$4 line=$5 state=${6:-} id=${7:-} meta=${8:-} url sha gerrit captured=''
+  if fm_dod_done_reports_no_validation "$kind" "$mode" "$line" "$meta"; then
+    printf '%s\n' "$FM_NM_VALIDATION_NOT_STARTED · this done: reports no validated PR, and a no-mistakes done: is only the ready report its run leads to; steer the worker to start /no-mistakes now"
+    return 1
+  fi
   fm_dod_should_gate_ship_done "$kind" "$mode" "$line" || return 0
   if [ "$mode" = local-only ] && [ -n "$meta" ]; then
     captured=$(cat "$meta") || return 1

@@ -1133,13 +1133,16 @@ EOF
 
 ## Done
 EOF
+  # A recorded PR makes the done: terminal: a no-mistakes done: with no PR at
+  # all reports no validated work and reads blocked.
   fm_write_meta "$home/state/terminal-ship.meta" \
     "window=firstmate:fm-terminal-ship" \
     "worktree=$home/projects/terminal" \
     "project=alpha" \
     "harness=claude" \
     "kind=ship" \
-    "mode=no-mistakes"
+    "mode=no-mistakes" \
+    "pr=https://example.test/owner/repo/pull/1"
   record_claude_idle "$home/state" terminal-ship
   printf 'done: complete\n' > "$home/state/terminal-ship.status"
   out=$(PATH="$fakebin:$PATH" FM_HOME="$home" "$SNAPSHOT" --secondmate-home-summary)

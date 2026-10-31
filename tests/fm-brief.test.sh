@@ -393,7 +393,7 @@ test_ship_mode_is_explicit_not_registry() {
   brief="$home/data/brief-explicit-a5/brief.md"
   grep -qx "Delivery contract: mode=no-mistakes" "$brief" \
     || fail "registered direct-PR posture overrode the explicit --mode"
-  assert_grep "Firstmate will then instruct you to run /no-mistakes" "$brief" \
+  assert_grep "start /no-mistakes yourself" "$brief" \
     "explicit no-mistakes brief did not render the pipeline definition of done"
 
   # An unregistered project is not a blocker either, because nothing is looked up.
@@ -535,6 +535,45 @@ test_no_mistakes_dod_wording() {
   assert_no_grep "no-mistakes refuses" "$brief" \
     "no-mistakes DOD must not claim the tool itself refuses --yes"
   pass "fm-brief.sh: no-mistakes DOD keeps its apostrophe prose and bans --yes outright"
+}
+
+# A no-mistakes worker starts its own validation after committing; it never
+# stops at a done: before the run and waits for firstmate to start it. Every
+# generated no-mistakes brief - the plain, pr=manual, Gerrit, Forgejo, and
+# based variants - carries that contract, and its only done: instruction is the
+# ready report the run produces.
+test_no_mistakes_briefs_start_validation_themselves() {
+  local home id args brief line n=0
+  home="$TMP_ROOT/self-start-home"
+  mkdir -p "$home/data"
+  for args in '--mode no-mistakes' '--mode no-mistakes --pr manual' \
+    '--mode no-mistakes --forge gerrit --shape squash' '--mode no-mistakes --forge forgejo' \
+    '--mode no-mistakes --base-branch release/1'; do
+    n=$((n + 1))
+    id="brief-self-start-$n"
+    # shellcheck disable=SC2086 # The variant's arguments must split into words.
+    FM_HOME="$home" "$ROOT/bin/fm-brief.sh" "$id" some-proj $args >/dev/null 2>&1 \
+      || fail "$args: the no-mistakes brief did not scaffold"
+    brief="$home/data/$id/brief.md"
+    assert_grep "start /no-mistakes yourself" "$brief" \
+      "$args: the worker is not told to start its own validation"
+    assert_grep "obey each run admission rule" "$brief" \
+      "$args: the worker is not told to respect run admission"
+    assert_no_grep "Firstmate will then instruct you" "$brief" \
+      "$args: the worker still waits for firstmate to start validation"
+    assert_no_grep "When you believe it is complete" "$brief" \
+      "$args: the worker still reports done before validation"
+    # shellcheck disable=SC2016 # Backticks are literal generated brief text.
+    grep -F 'append `done [at=<epoch>]:' "$brief" > "$brief.done" \
+      || fail "$args: the brief names no ready report"
+    while IFS= read -r line; do
+      case "$line" in
+        *'checks green'*|*'published for review'*) ;;
+        *) fail "$args: a done: instruction is not the ready report: $line" ;;
+      esac
+    done < "$brief.done"
+  done
+  pass "fm-brief.sh: every no-mistakes brief starts its own validation and reports done only when ready"
 }
 
 # The green-PR report must not depend on a status poll: `axi status` never
@@ -1704,6 +1743,7 @@ test_ship_mode_is_explicit_not_registry
 test_delivery_flags_are_refused_where_they_do_not_apply
 test_faster_paths_use_configured_authority_without_stacked_review
 test_no_mistakes_dod_wording
+test_no_mistakes_briefs_start_validation_themselves
 test_no_mistakes_dod_green_detection
 test_pr_based_dod_requires_non_draft
 test_ask_user_escalation_format

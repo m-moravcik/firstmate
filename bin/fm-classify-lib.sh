@@ -2698,6 +2698,31 @@ crew_is_paused() {  # <id>
 # crew_gate_awaits_human_decision below is its only consumer.
 FM_GATE_HUMAN_DECISION='ask-user: authority decision'
 
+# The one spelling of the verdict component that says a no-mistakes ship
+# reported done: with no validated work: no run is attributed to it, its pane is
+# idle, and its done: names neither the ready PR nor a published change.
+# bin/fm-dod-lib.sh's done gate mints it as the first component of its refusal,
+# which bin/fm-crew-state.sh reports as `blocked`;
+# crew_line_reports_nm_validation_not_started below is its reader for the
+# watcher's validation-start reminder.
+FM_NM_VALIDATION_NOT_STARTED='no-mistakes validation not started'
+
+# 0 when a bin/fm-crew-state.sh line is that verdict: state blocked from the
+# status log with the whole component above. A live, parked, or terminal run
+# answers from its run step, and a busy pane answers working, so neither can
+# carry it. The component is compared whole, never searched for.
+crew_line_reports_nm_validation_not_started() {  # <crew-state line>
+  local line=$1 rest part
+  case "$line" in "state: blocked · source: status-log · "*) ;; *) return 1 ;; esac
+  rest="${line#state: blocked · source: status-log · } · "
+  while [ -n "$rest" ]; do
+    part=${rest%% · *}
+    rest=${rest#* · }
+    [ "$part" = "$FM_NM_VALIDATION_NOT_STARTED" ] && return 0
+  done
+  return 1
+}
+
 # 0 if crew <id>'s authoritative current state is a no-mistakes gate whose answer
 # is owed by a human rather than by the crewmate itself.
 #

@@ -83,15 +83,81 @@ test_moved_branch_without_named_head_is_refused() {
   pass "a moved remote branch that lacks the named head is refused"
 }
 
-test_no_mistakes_prevalidation_done_is_not_gated() {
-  local repo wt
+# A no-mistakes worker starts its own validation after committing, so its only
+# done: is the ready report the run produces. A done: that names no PR or
+# published change reports work no run has validated: it is refused whether or
+# not its head is reachable, with the whole component bin/fm-crew-state.sh
+# carries and the watcher's validation-start reminder compares.
+test_no_mistakes_done_without_validation_is_refused() {
+  local repo wt mode line reason rc
   repo="$TMP_ROOT/preval-repo"
   wt="$TMP_ROOT/preval-wt"
   fm_git_worktree "$repo" "$wt" fm/preval
   git -C "$wt" commit -q --allow-empty -m 'only in the disposable copy'
-  accept_done ship no-mistakes "$wt" "$repo" 'done: implementation complete' \
-    || fail "no-mistakes pre-validation done: must not require named-head reachability"
-  pass "no-mistakes pre-validation done: is not gated"
+  for mode in no-mistakes ''; do
+    for line in 'done: implementation complete' 'done [key=fix] [at=1000]: committed, ready to validate'; do
+      rc=0
+      reason=$(accept_done ship "$mode" "$wt" "$repo" "$line") || rc=$?
+      [ "$rc" -eq 1 ] || fail "mode '$mode': a done: with no validated PR was accepted: $line"
+      assert_contains "$reason" "no-mistakes validation not started · " \
+        "mode '$mode': the refusal did not carry the validation-not-started component"
+      assert_contains "$reason" "start /no-mistakes" \
+        "mode '$mode': the refusal did not say how to recover"
+    done
+  done
+  git -C "$wt" update-ref refs/remotes/origin/fm/preval "$(git -C "$wt" rev-parse HEAD)"
+  rc=0
+  accept_done ship no-mistakes "$wt" "$repo" 'done: implementation complete' >/dev/null || rc=$?
+  [ "$rc" -eq 1 ] || fail "a reachable head made an unvalidated no-mistakes done: acceptable"
+  accept_done ship no-mistakes "$wt" "$repo" 'done: PR https://github.com/o/r/pull/9 opened' \
+    || fail "a no-mistakes done: that reports a PR lost its existing ungated handling"
+  printf 'kind=ship\nmode=no-mistakes\npr=https://github.com/o/r/pull/9\n' > "$TMP_ROOT/preval-registered.meta"
+  accept_done ship no-mistakes "$wt" "$repo" 'done: review fix pushed' "$TMP_ROOT" preval-registered \
+    "$TMP_ROOT/preval-registered.meta" \
+    || fail "a done: on a task with a recorded PR was read as validation never started"
+  accept_done ship direct-PR "$wt" "$repo" 'done: PR https://github.com/o/r/pull/9' \
+    || fail "a direct-PR done: on a reachable head was refused"
+  pass "a no-mistakes done: with no validated PR is refused as validation not started"
+}
+
+# The generated Definition of done is the worker's whole delivery contract. Every
+# no-mistakes variant must have the worker start its own run after committing,
+# under the admission rules its brief names, and its only done: instruction must
+# be the ready report the run produces.
+test_no_mistakes_worker_starts_its_own_validation() {
+  local variant pr forge base out line n=0
+  for variant in 'auto|none|' 'auto|forgejo|' 'auto|none|feature/hub' 'manual|none|' 'auto|gerrit|'; do
+    IFS='|' read -r pr forge base <<EOF
+$variant
+EOF
+    n=$((n + 1))
+    out="$TMP_ROOT/self-start-$n.md"
+    fm_dod_block no-mistakes self-start-task fm/self-start-task "$forge" "$base" '' "$pr" > "$out" \
+      || fail "variant $variant: the no-mistakes Definition of done did not render"
+    assert_grep 'start /no-mistakes yourself' "$out" \
+      "variant $variant: the worker is not told to start its own validation"
+    assert_grep 'obey each run admission rule' "$out" \
+      "variant $variant: the worker is not told to respect run admission"
+    # shellcheck disable=SC2016 # Backticks are literal generated brief text.
+    assert_grep 'an admission wait is never a `done:`' "$out" \
+      "variant $variant: an admission wait could still be reported as done"
+    assert_no_grep 'Firstmate will then instruct you' "$out" \
+      "variant $variant: the worker still waits for firstmate to start validation"
+    assert_no_grep 'When you believe it is complete' "$out" \
+      "variant $variant: the worker still reports done before validation"
+    assert_no_grep 'handoff that starts the pipeline' "$out" \
+      "variant $variant: a pre-validation done is still described as the pipeline handoff"
+    # shellcheck disable=SC2016 # Backticks are literal generated brief text.
+    grep -F 'append `done [at=<epoch>]:' "$out" > "$out.done" \
+      || fail "variant $variant: the Definition of done names no ready report"
+    while IFS= read -r line; do
+      case "$line" in
+        *'checks green'*|*'published for review'*) ;;
+        *) fail "variant $variant: a done: instruction is not the ready report: $line" ;;
+      esac
+    done < "$out.done"
+  done
+  pass "every no-mistakes Definition of done starts its own validation and reports done only when ready"
 }
 
 test_local_only_linked_branch_is_accepted() {
@@ -450,7 +516,8 @@ EOF
 
 test_scout_done_is_not_gated
 test_unpushed_ship_done_is_refused
-test_no_mistakes_prevalidation_done_is_not_gated
+test_no_mistakes_done_without_validation_is_refused
+test_no_mistakes_worker_starts_its_own_validation
 test_remote_containing_named_head_is_accepted
 test_moved_branch_without_named_head_is_refused
 test_free_text_sha_is_not_the_named_head
