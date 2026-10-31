@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Opt-in record-age reminders through the watcher's real queue interface.
+# Record-age reminders through the watcher's real queue interface: the opt-in
+# open-decision reminder and the always-on no-mistakes validation-start reminder.
 # No endpoint, harness process, model call, or remote host is needed.
 set -eu
 
@@ -341,10 +342,160 @@ test_watcher_loop() {
   pass "the actual watcher wakes and exits on an overdue key without any recorded pane"
 }
 
+# --- no-mistakes validation-start reminder ---------------------------------
+# A stub current-state reader stands in for bin/fm-crew-state.sh, whose own
+# tests pin the verdict it prints for a done: no run has validated; every call
+# is logged so the tests can bound how often the reminder reads it.
+NM_STUB_DIR="$TMP_ROOT/nm-stub"
+mkdir -p "$NM_STUB_DIR"
+cat > "$NM_STUB_DIR/fm-crew-state.sh" <<'STUB'
+#!/usr/bin/env bash
+printf '%s\n' "$1" >> "$NM_STUB_DIR/calls"
+cat "$NM_STUB_DIR/$1.crew" 2>/dev/null || true
+STUB
+chmod +x "$NM_STUB_DIR/fm-crew-state.sh"
+export NM_STUB_DIR
+
+nm_reset() {
+  reset_case
+  rm -f -- "$NM_STUB_DIR"/*.crew "$NM_STUB_DIR/calls"
+  NM_VALIDATION_REMINDER=
+  FM_CREW_STATE_BIN="$NM_STUB_DIR/fm-crew-state.sh"
+  task_captain_call_open() { return 1; }
+}
+
+nm_task() {  # <id> <kind> <mode> <status-text> [extra meta line]
+  printf 'kind=%s\nmode=%s\nbranch=fm/%s\n' "$2" "$3" "$1" > "$STATE/$1.meta"
+  [ -z "${5:-}" ] || printf '%s\n' "$5" >> "$STATE/$1.meta"
+  printf '%s' "$4" > "$STATE/$1.status"
+}
+
+nm_crew() {  # <id> <crew-state line>
+  printf '%s\n' "$2" > "$NM_STUB_DIR/$1.crew"
+}
+
+nm_not_started() {  # <id>
+  nm_crew "$1" "state: blocked · source: status-log · $FM_NM_VALIDATION_NOT_STARTED · steer the worker to start /no-mistakes"
+}
+
+nm_calls() {  # [id] -> number of current-state reads (of that task)
+  if [ ! -f "$NM_STUB_DIR/calls" ]; then printf 0
+  elif [ -n "${1:-}" ]; then grep -cx -- "$1" "$NM_STUB_DIR/calls" || true
+  else wc -l < "$NM_STUB_DIR/calls" | tr -d ' '
+  fi
+}
+
+test_nm_validation_reminder_fires_once() {
+  local now
+  nm_reset
+  nm_task worker ship no-mistakes $'done [at=1000]: implementation committed, ready to validate\n'
+  nm_not_started worker
+  nm_validation_start_tick 1599
+  [ "$(count_wakes)" = 0 ] || fail "the reminder fired before the done: was ten minutes old"
+  [ "$(nm_calls)" = 0 ] || fail "a young done: cost a current-state read"
+  nm_validation_start_tick 1600
+  [ "$(count_wakes)" = 1 ] || fail "a ten-minute-old done: with no run did not queue exactly one wake"
+  assert_contains "$NM_VALIDATION_REMINDER" "check: no-mistakes validation not started: worker " \
+    "the reminder did not name the task"
+  assert_contains "$NM_VALIDATION_REMINDER" "steer the worker to run /no-mistakes now" \
+    "the reminder did not tell the supervisor what to do"
+  for now in 1601 1615 2200 5000 "$((1600 + PAUSE_RESURFACE_SECS - 1))"; do
+    nm_validation_start_tick "$now"
+  done
+  [ "$(count_wakes)" = 1 ] || fail "the reminder repeated before the long recheck cadence"
+  [ "$(nm_calls)" = 1 ] || fail "an already reported done: kept costing current-state reads"
+  nm_validation_start_tick "$((1600 + PAUSE_RESURFACE_SECS))"
+  [ "$(count_wakes)" = 2 ] || fail "an unanswered reminder was never rechecked on the long cadence"
+  pass "a no-mistakes done: with no run surfaces once after ten minutes, then only on the long recheck cadence"
+}
+
+test_nm_validation_reminder_exemptions() {
+  local id
+  nm_reset
+  nm_task live ship no-mistakes $'done [at=1000]: committed\n'
+  nm_crew live 'state: working · source: run-step · validating (running) · run: r1'
+  nm_task parked ship no-mistakes $'done [at=1000]: committed\n'
+  nm_crew parked 'state: parked · source: run-step · parked at review: 2 finding(s) · run: r2'
+  nm_task passed ship no-mistakes $'done [at=1000]: committed\n'
+  nm_crew passed 'state: done · source: run-step · checks green: PR ready for review'
+  nm_task busy ship no-mistakes $'done [at=1000]: committed\n'
+  nm_crew busy 'state: working · source: pane · harness busy (thinking)'
+  nm_task held ship no-mistakes $'done [at=1000]: committed\n'
+  nm_not_started held
+  task_captain_call_open() { [ "$1" = held ]; }
+  nm_task registered ship no-mistakes $'done [at=1000]: committed\n' 'pr=https://github.com/o/r/pull/3'
+  nm_task direct ship direct-PR $'done [at=1000]: committed\n'
+  nm_task scout scout no-mistakes $'done [at=1000]: report written\n'
+  nm_task resumed ship no-mistakes $'done [at=1000]: committed\npaused [at=1100]: validation round under way\n'
+  nm_task remote ship no-mistakes $'done [at=1000]: committed\n' 'remote_host=far.example'
+  for id in registered direct scout resumed remote; do nm_not_started "$id"; done
+  nm_validation_start_tick 2000
+  [ "$(count_wakes)" = 0 ] || fail "a live, parked, or passed run, a busy worker, or an exempt task raised a reminder: $NM_VALIDATION_REMINDER"
+  for id in registered direct scout resumed remote; do
+    [ "$(nm_calls "$id")" = 0 ] || fail "$id was read although it can never need the reminder"
+  done
+  nm_validation_start_tick 2599
+  [ "$(nm_calls live)" = 1 ] || fail "a live run was re-read before the next interval"
+  nm_not_started live
+  nm_validation_start_tick 2600
+  [ "$(count_wakes)" = 1 ] || fail "the run ending without a validated PR raised no reminder"
+  assert_contains "$NM_VALIDATION_REMINDER" "validation not started: live " \
+    "the reminder named the wrong task"
+  pass "a live, parked, or passed run, a busy worker, a captain hold, a recorded PR, other modes and kinds, a later event, and a remote task raise no reminder"
+}
+
+test_nm_validation_reminder_rearms() {
+  nm_reset
+  nm_task worker ship '' $'done: committed\n'
+  nm_not_started worker
+  nm_validation_start_tick 1000
+  nm_validation_start_tick 1599
+  [ "$(count_wakes)" = 0 ] || fail "an unstamped done: was aged from before it was first seen"
+  nm_validation_start_tick 1600
+  [ "$(count_wakes)" = 1 ] || fail "an unstamped done: on an unregistered mode never surfaced"
+  printf 'done [at=3000]: committed the review fix\n' >> "$STATE/worker.status"
+  nm_validation_start_tick 3599
+  [ "$(count_wakes)" = 1 ] || fail "a new done: inherited the previous reminder's timing"
+  nm_validation_start_tick 3600
+  [ "$(count_wakes)" = 2 ] || fail "a new done: did not get its own reminder"
+  pass "an unstamped done: ages from first sight, and a new done: re-arms the reminder"
+}
+
+test_nm_validation_watcher_loop() {
+  local dir="$TMP_ROOT/nm-watcher-loop" pid i=0
+  mkdir -p "$dir/state" "$dir/config" "$dir/stub"
+  fm_test_track_watcher_state "$dir/state"
+  touch "$dir/state/home-summary.json"
+  printf 'kind=ship\nmode=no-mistakes\nbranch=fm/worker\n' > "$dir/state/worker.meta"
+  printf 'done [at=1000]: committed, ready to validate\n' > "$dir/state/worker.status"
+  printf 'state: blocked · source: status-log · %s · steer the worker\n' \
+    "$FM_NM_VALIDATION_NOT_STARTED" > "$dir/stub/verdict"
+  printf '#!/usr/bin/env bash\ncat %q\n' "$dir/stub/verdict" > "$dir/stub/fm-crew-state.sh"
+  chmod +x "$dir/stub/fm-crew-state.sh"
+  FM_HOME="$dir" FM_STATE_OVERRIDE="$dir/state" FM_CONFIG_OVERRIDE="$dir/config" \
+    FM_CREW_STATE_BIN="$dir/stub/fm-crew-state.sh" \
+    bash "$ROOT/bin/fm-watch.sh" > "$dir/out" 2> "$dir/err" &
+  pid=$!
+  while [ "$i" -lt 100 ] && kill -0 "$pid" 2>/dev/null; do sleep 0.1; i=$((i + 1)); done
+  if kill -0 "$pid" 2>/dev/null; then
+    kill "$pid" 2>/dev/null || true
+    wait "$pid" 2>/dev/null || true
+    fail "real watcher failed to wake on a done: no run validated"
+  fi
+  wait "$pid" || fail "real watcher exited unsuccessfully: $(cat "$dir/err")"
+  grep -F 'check: no-mistakes validation not started: worker ' "$dir/out" >/dev/null \
+    || fail "real watcher did not print the validation-start reminder: $(cat "$dir/out")"
+  [ "$(wc -l < "$dir/state/.wake-queue" | tr -d ' ')" = 1 ] \
+    || fail "real watcher did not durably queue exactly one reminder"
+  pass "the actual watcher wakes and exits on a no-mistakes done: no run validated"
+}
+
 fm_test_run test_disabled test_oldest_and_backoff test_numeric_keys_are_distinct \
   test_numeric_tasks_are_distinct test_resolution_and_reopen \
   test_wait_exemptions test_relayed_captain_hold_is_exempt_by_key \
   test_relayed_captain_hold_until_rearms test_unchanged_republish_keeps_backoff \
   test_resolved_same_text_reopen_starts_fresh test_republish_updates_until_date \
   test_unknown_times_and_keyless test_timed_fold_is_incremental \
-  test_invalid_settings test_timed_cursor_retirement test_watcher_loop
+  test_invalid_settings test_timed_cursor_retirement test_watcher_loop \
+  test_nm_validation_reminder_fires_once test_nm_validation_reminder_exemptions \
+  test_nm_validation_reminder_rearms test_nm_validation_watcher_loop

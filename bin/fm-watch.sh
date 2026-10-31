@@ -25,7 +25,7 @@
 #                          timer) regardless of what the status log says - an active
 #                          run-step or busy pane outranks even a captain-relevant log
 #                          line, since the crew's own log gets no new entry once
-#                          firstmate hands it to a no-mistakes validation. A declared
+#                          its work is in a no-mistakes validation. A declared
 #                          external-wait pause or verified captain-held transfer is
 #                          absorbed instead with its own long re-surface cadence,
 #                          never as a wedge, and that recheck reason names which
@@ -127,6 +127,10 @@
 #                          opt-in config/open-decision-reminders record-age
 #                          backstop, independent of pane and branch state;
 #                          open_decision_reminder_tick owns its bounded repeats
+#   check: no-mistakes validation not started: <task> done <s>s ago ...
+#                          always-on backstop for a no-mistakes ship whose done:
+#                          no run validated; nm_validation_start_tick owns its
+#                          bounds and the steer the reason asks for
 #   check: process-event result captured: <keys>
 #                          a durably captured process-to-event result is queued
 #                          and has not been surfaced yet; reported once per
@@ -3014,6 +3018,120 @@ EOF
   fi
 }
 
+# Always-on no-mistakes validation-start backstop. A no-mistakes ship worker
+# starts its own run after committing (bin/fm-dod-lib.sh owns that contract), but
+# a worker launched on an older brief still stops at a pre-validation done: and
+# waits to be told. This finds a ship task whose meta records mode no-mistakes
+# (or none, the unregistered default) with no pr= and no remote_host=, whose
+# current status declaration is a done: at least NM_VALIDATION_START_SECS old,
+# and whose current-state read proves no run validated it
+# (crew_line_reports_nm_validation_not_started), and queues one
+# `check: no-mistakes validation not started: <task> ...` wake telling the
+# supervisor to steer the worker to run /no-mistakes now. A live, parked, or
+# terminal run, a busy pane, a captain call on the task, or any later status
+# event keeps it quiet.
+# The done:'s age comes from its [at=] stamp, or from the first poll that saw it
+# when it carries none, never from file mtime. Bounds, so it never repeats every
+# poll: at most one wake per poll, for the oldest due task; at most one
+# current-state read per task per NM_VALIDATION_START_SECS; and a reported done:
+# is reported again only after PAUSE_RESURFACE_SECS, the long recheck cadence
+# the other bounded alerts use. A new done: is a new identity with its own timer.
+# STATE/.nm-validation-start stores <task> TAB <done line> TAB <since> TAB
+# <last-read> TAB <last-reported>; rows of tasks that stop qualifying drop out,
+# and the file is rewritten only when a row changes. The caller logs a failed
+# tick and keeps supervising, so a broken ledger cannot stop the watcher.
+NM_VALIDATION_START_SECS=${FM_NM_VALIDATION_START_SECS:-600}
+case "$NM_VALIDATION_START_SECS" in ''|0*|*[!0-9]*) NM_VALIDATION_START_SECS=600 ;; esac
+NM_VALIDATION_REMINDER=
+nm_validation_start_tick() {  # [now-epoch], for deterministic clock callers
+  local now=${1:-} threshold=$NM_VALIDATION_START_SECS ledger old='' rows='' eligible=''
+  local meta id f value kind mode pr remote line verb ident since checked notified
+  local old_id old_ident old_since old_checked old_notified read_ids='' crew
+  local due='' due_since=0 reason tmp
+  NM_VALIDATION_REMINDER=
+  [ -n "$now" ] || fm_epoch_seconds_to now
+  ledger="$STATE/.nm-validation-start"
+  if [ -e "$ledger" ] || [ -L "$ledger" ]; then
+    [ -f "$ledger" ] && [ -r "$ledger" ] && [ ! -L "$ledger" ] || return 1
+    old=$(cat "$ledger") || return 1
+  fi
+  for meta in "$STATE"/*.meta; do
+    [ -f "$meta" ] && [ ! -L "$meta" ] || continue
+    id=${meta##*/}; id=${id%.meta}
+    f="$STATE/$id.status"
+    [ -f "$f" ] && [ -r "$f" ] && [ ! -L "$f" ] || continue
+    kind='' mode='' pr='' remote=''
+    while IFS= read -r value || [ -n "$value" ]; do
+      case "$value" in
+        kind=*) kind=${value#kind=} ;;
+        mode=*) mode=${value#mode=} ;;
+        pr=*) pr=${value#pr=} ;;
+        remote_host=*) remote=${value#remote_host=} ;;
+      esac
+    done < "$meta"
+    [ "${kind:-ship}" = ship ] && [ -z "$pr" ] && [ -z "$remote" ] || continue
+    case "$mode" in no-mistakes|'') ;; *) continue ;; esac
+    # The latest event is the cheap read; only a done: there can be current.
+    line=$(last_status_line "$f")
+    status_line_verb "$line" verb
+    [ "$verb" = "done" ] || continue
+    line=$(status_current_line "$f" ship)
+    status_line_verb "$line" verb
+    [ "$verb" = "done" ] || continue
+    ident=${line//$'\t'/ }
+    since='' checked=0 notified=0
+    while IFS=$'\t' read -r old_id old_ident old_since old_checked old_notified; do
+      [ "$old_id" = "$id" ] && [ "$old_ident" = "$ident" ] || continue
+      case "$old_since" in ''|*[!0-9]*) break ;; esac
+      case "$old_checked" in ''|*[!0-9]*) break ;; esac
+      case "$old_notified" in ''|*[!0-9]*) break ;; esac
+      [ "${#old_since}" -le 12 ] && [ "${#old_checked}" -le 12 ] && [ "${#old_notified}" -le 12 ] || break
+      since=$((10#$old_since)) checked=$((10#$old_checked)) notified=$((10#$old_notified))
+      break
+    done <<EOF
+$old
+EOF
+    value=$(status_line_at_epoch "$line") && since=$value
+    [ -n "$since" ] || since=$now
+    rows="$rows$id"$'\t'"$ident"$'\t'"$since"$'\t'"$checked"$'\t'"$notified"$'\n'
+    [ "$now" -ge "$since" ] && [ "$((now - since))" -ge "$threshold" ] || continue
+    [ "$checked" -eq 0 ] || [ "$((now - checked))" -ge "$threshold" ] || continue
+    [ "$notified" -eq 0 ] || [ "$((now - notified))" -ge "$PAUSE_RESURFACE_SECS" ] || continue
+    eligible="$eligible$since"$'\t'"$id"$'\n'
+  done
+  if [ -n "$eligible" ]; then
+    eligible=$(printf '%s' "$eligible" | sort -n) || return 1
+    while IFS=$'\t' read -r since id; do
+      [ -n "$id" ] || continue
+      read_ids="$read_ids $id"
+      task_captain_call_open "$id" && continue
+      crew=$("$FM_CREW_STATE_BIN" "$id" 2>/dev/null) || crew=
+      crew_line_reports_nm_validation_not_started "$crew" || continue
+      due=$id due_since=$since
+      break
+    done <<EOF
+$eligible
+EOF
+  fi
+  if [ -n "$due" ]; then
+    reason="check: no-mistakes validation not started: $due done $((now - due_since))s ago with no pr= and no live run - steer the worker to run /no-mistakes now"
+    fm_wake_append check "nm-validation-start:$due" "$reason" || return 1
+    NM_VALIDATION_REMINDER=$reason
+  fi
+  if [ -n "$read_ids" ]; then
+    rows=$(printf '%s' "$rows" | awk -F '\t' -v OFS='\t' -v now="$now" -v ids="$read_ids" -v due="$due" '
+      BEGIN { n = split(ids, list, " "); for (i = 1; i <= n; i++) read[list[i]] = 1 }
+      { if (($1 "") in read) $4 = now; if (due != "" && ($1 "") == (due "")) $5 = now; print }') || return 1
+    rows="$rows"$'\n'
+  fi
+  [ "${rows%$'\n'}" != "$old" ] || return 0
+  tmp=$(mktemp "$STATE/.nm-validation-start.XXXXXX") || return 1
+  if ! printf '%s' "$rows" > "$tmp" || ! mv -f "$tmp" "$ledger"; then
+    rm -f -- "$tmp"
+    return 1
+  fi
+}
+
 # The identity a re-surface throttle is bound to: the task's whole status-log
 # signature. Any new status event - a replacement wait, a fresh delivery, a
 # blocker - changes it and so starts its own window instead of inheriting the
@@ -4154,6 +4272,11 @@ while :; do
   }
   [ -z "$OPEN_DECISION_REMINDER" ] || wake "$OPEN_DECISION_REMINDER"
 
+  # Always-on backstop for a no-mistakes ship that reported done: without ever
+  # validating; a failed tick is logged rather than stopping supervision.
+  nm_validation_start_tick || triage_log "no-mistakes validation-start check failed"
+  [ -z "$NM_VALIDATION_REMINDER" ] || wake "$NM_VALIDATION_REMINDER"
+
   # Endpoint liveness runs before queue observation: a positively dead or
   # missing secondmate endpoint is relaunched here on a bounded cadence, which
   # is also what unsticks that mate's foreign wake queue. The tick's single
@@ -4642,7 +4765,7 @@ EOF
         elif stale_is_terminal "$w" "$STATE"; then
           # The log's latest status event is captain-relevant - but that alone is not
           # proof the crew is actually done: a crew's own status log gets no
-          # new entry once firstmate hands it to a no-mistakes validation
+          # new entry once its work is in a no-mistakes validation
           # (AGENTS.md's sparse status-reporting contract), so the log can
           # keep showing a "done:"/needs-decision/blocked leftover from
           # BEFORE that validation started for the run's entire (possibly

@@ -916,9 +916,11 @@ EOF
 
 ## Done
 EOF
+  # The done child records its PR: a no-mistakes done: with no PR at all reports
+  # no validated work and reads blocked, not terminal.
   fm_write_meta "$mate/state/done.meta" \
     "window=firstmate:fm-done" "worktree=$mate/projects/done" "project=sample" \
-    "harness=claude" "kind=ship" "mode=no-mistakes"
+    "harness=claude" "kind=ship" "mode=no-mistakes" "pr=https://example.test/owner/repo/pull/1"
   fm_write_meta "$mate/state/failed.meta" \
     "window=firstmate:fm-failed" "worktree=$mate/projects/failed" "project=sample" \
     "harness=claude" "kind=ship" "mode=no-mistakes"

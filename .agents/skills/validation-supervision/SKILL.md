@@ -8,7 +8,8 @@ metadata:
 
 # Validation supervision
 
-For a no-mistakes ship, trigger validation on the same worker after its implementation commit, using the harness invocation owned by `harness-adapters`.
+A no-mistakes ship worker starts its own validation run right after its implementation commit, under the run admission rules its instructions name; `bin/fm-dod-lib.sh` owns that contract, and firstmate never waits for a `done:` to start it.
+A `done:` with no validated PR therefore means validation never started: `bin/fm-crew-state.sh` reads it blocked, and the watcher raises a `check: no-mistakes validation not started` notification naming the task while no run is live (`bin/fm-watch.sh` owns its bounds), so steer that same worker to run /no-mistakes now, using the harness invocation owned by `harness-adapters`.
 The task worker that starts a no-mistakes run drives the pipeline and owns every `no-mistakes axi run` and `no-mistakes axi respond` call through the next gate or outcome.
 Firstmate never invokes `no-mistakes axi respond` for a crew-owned run.
 `bin/fm-dod-lib.sh` owns the worker-side `--intent` contract.
