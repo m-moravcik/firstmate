@@ -1,0 +1,29 @@
+=== custom_check (/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-base.d7s0CO) ===
+registered: state/probe.check.sh
+before: .last-check mtime=1577833200
+watcher exit=0
+watcher stdout (the delivered wake):
+  | check: open decision overdue: worker key=api age=1793574960s
+after: .last-check mtime=1577833200
+durable wake queue (kind, key, reason):
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574960s
+drain presents:
+  | 1793575961	3	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574960s
+=== signal_scan (/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-base.d7s0CO) ===
+watcher exit=0
+watcher stdout (the delivered wake):
+  | check: open decision overdue: worker key=api age=1793574979s
+durable wake queue:
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574979s
+drain presents:
+  | 1793575980	3	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574979s
+  | worker2 done: shipped the fix PR
+=== heartbeat (/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-base.d7s0CO) ===
+before: .last-heartbeat mtime=1577833200 streak=0
+watcher exit=0
+watcher stdout:
+  | check: open decision overdue: worker key=api age=1793575003s
+after: .last-heartbeat mtime=1577833200
+triage log:
+durable wake queue:
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793575003s

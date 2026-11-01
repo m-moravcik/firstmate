@@ -1,0 +1,58 @@
+=== custom_check ({run-worktree}) ===
+registered: state/probe.check.sh
+before: .last-check mtime=1577833200
+watcher exit=0
+watcher stdout (the delivered wake):
+  | check: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/custom/state/probe.check.sh: ping-from-custom-check
+after: .last-check mtime=1793575796
+durable wake queue (kind, key, reason):
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574792s
+  | check	/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/custom/state/probe.check.sh	check: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/custom/state/probe.check.sh: ping-from-custom-check
+drain presents:
+  | 1793575793	3	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574792s
+  | 1793575796	4	check	/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/custom/state/probe.check.sh	check: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/custom/state/probe.check.sh: ping-from-custom-check
+=== signal_scan ({run-worktree}) ===
+watcher exit=0
+watcher stdout (the delivered wake):
+  | signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/signal/state/worker2.status
+durable wake queue:
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574822s
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/signal/state/worker2.status
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/signal/state/worker2.status
+drain presents:
+  | 1793575823	3	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574822s
+  | 1793575828	5	signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-head-scen.A8LJjz/signal/state/worker2.status
+  | wake annotation: latest wake-EVENT observed at drain, not current state: worker2.status: done: shipped the fix PR
+  | worker2 done: shipped the fix PR
+=== heartbeat ({run-worktree}) ===
+before: .last-heartbeat mtime=1577833200 streak=0
+watcher exit=0
+watcher stdout:
+  | check: open decision overdue: worker key=api age=1793574853s
+after: .last-heartbeat mtime=1793575856
+triage log:
+  | [2026-11-02T00:30:56+0100] absorbed heartbeat (no captain-relevant change)
+durable wake queue:
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574853s
+=== backoff ({run-worktree}) ===
+run 1 exit=0
+  | check: open decision overdue: worker key=api age=1793574875s
+ledger after run 1 (task key opened last delay):
+  | worker	api	1000	1793575875	100run 2 (6s window, within backoff) exit=124 (124 = still polling, no wake)
+run 2 stdout:
+queue after run 2 (expect empty):
+ledger after run 2:
+  | worker	api	1000	1793575875	100
+run 3 (backoff elapsed) exit=0
+  | check: open decision overdue: worker key=api age=1793574901s
+ledger after run 3 (expect delay 200):
+  | worker	api	1000	1793575901	200=== downtime ({run-worktree}) ===
+watcher exit=0
+watcher stdout:
+  | check: open decision overdue: worker key=api age=1793574920s
+durable wake queue:
+  | check	leftover	check: leftover row from before downtime
+  | check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574920s
+drain presents:
+  | 1793575918	3	check	leftover	check: leftover row from before downtime
+  | 1793575921	4	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793574920s

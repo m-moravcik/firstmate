@@ -1,0 +1,12 @@
+== reminders OFF, root={run-worktree}
+exit=0
+  | signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.lzDn1l/ctl/state/worker2.status
+queue:
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.lzDn1l/ctl/state/worker2.status
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.lzDn1l/ctl/state/worker2.status
+== reminders OFF, root=/var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-base.d7s0CO
+exit=0
+  | signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.MFxerF/ctl/state/worker2.status
+queue:
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.MFxerF/ctl/state/worker2.status
+  | signal	worker2.status	signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-ctl.MFxerF/ctl/state/worker2.status
