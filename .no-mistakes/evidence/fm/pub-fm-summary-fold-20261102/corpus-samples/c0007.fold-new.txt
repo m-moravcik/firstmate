@@ -1,0 +1,2 @@
+nm-run1-step	needs-decision	[key=nm-run1-step] unicode žák ✓
+--rc=0

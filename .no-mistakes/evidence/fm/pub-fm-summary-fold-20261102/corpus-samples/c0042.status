@@ -1,0 +1,8 @@
+working [key=a/b]
+needs-decision:[key=a] choose: A or B
+note [key=a/b]:[at=1793600001] stamp in note
+resolved [key=k*]: 
+failed:[key=default][at=1793600001] stamp in note
+done:[key=a] 
+held: [key=remote-reply-continuity-z][at=1793600001] stamp in note
+held [key=nm-run1-step]: pending-reply-x: ok

@@ -1,0 +1,11 @@
+Differential: base c61646ff fm-classify-lib.sh vs change 223f997a, both under /bin/bash 3.2.57
+Corpus: 600 synthetic status logs (gen.py seed 20261102), sibling .meta kinds ship/scout/secondmate/blank/weird/absent
+Per case: status_open_decisions x5 (meta kind, ship, scout, secondmate, FM_CLASSIFY_RESOLVE_VERB=answered + FM_CLASSIFY_CAPTAIN_HELD_VERB=held)
+          status_open_decisions_incremental untimed+timed: full fold, cursor re-read, split-append
+          per line: status_line_note, _fm_decision_key, _fm_decision_key '' , _fm_key_at_note_head (printed output + rc)
+          new only: out-var forms vs printed forms (names n2,k,unstamped,rest)
+Totals: 3000 whole-file folds (1465 with non-empty open sets), 1200 incremental transcripts, 12722 status lines x 4 readers
+Result: diff -r out-old out-new -> 0 bytes of difference (byte-identical)
+Out-var vs printed mismatches (new): 0
+Rejected-slug paths exercised (rc=1): key=3368 keyless=3368 head=8312
+Wall time (7 parallel workers each): new 917s, old 1127s

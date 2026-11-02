@@ -1,0 +1,12 @@
+bash 5.2.37 built from the GNU tarball (sha256 9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff) in a disposable temp prefix
+new-bash5 rc=0 149s
+diff old(bash3.2) vs new(bash5) rc=0 bytes=       0
+       0
+
+regression test file, bash 5: new lib rc=0 (24 ok); base lib rc=1:
+not ok - the whole-file fold launches subprocess work per transition (     383 ->   312017)
+
+related fold test files on new lib (bash 3.2):
+fm-classify-corr-token rc=0 249s
+fm-wake-drain-open-decisions-cursor rc=0 201s
+fm-wake-drain-open-decisions rc=0 71s

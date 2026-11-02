@@ -1,0 +1,15 @@
+new mate-alpha  rc=0  10.91s open=128
+new mate-beta   rc=0   8.04s open=129
+new mate-gamma  rc=0   7.21s open=78
+new ship-open   rc=0   0.26s open=1
+new scout-done  rc=0   0.29s open=0
+old mate-alpha  rc=0  66.54s open=128
+old mate-beta   rc=0  65.77s open=129
+old mate-gamma  rc=0  42.94s open=78
+old ship-open   rc=0   0.24s open=1
+old scout-done  rc=0   0.11s open=0
+mate-alpha byte-identical sha=c2ff0e129e472370
+mate-beta byte-identical sha=80926d4641055f42
+mate-gamma byte-identical sha=f187f7b6ffcdc7e6
+ship-open byte-identical sha=346e585c78df125e
+scout-done byte-identical sha=e3b0c44298fc1c14

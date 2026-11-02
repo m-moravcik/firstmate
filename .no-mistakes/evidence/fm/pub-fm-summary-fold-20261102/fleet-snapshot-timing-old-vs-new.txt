@@ -1,0 +1,9 @@
+Lab FM_HOME (fm-lab-home.sh create) with 3 kind=secondmate children (2215/2806/3243-line status logs, open sets 128/129/78), 1 ship, 1 scout
+FM_SNAPSHOT_NOW=2026-11-02T12:00:00Z, private TMUX_TMPDIR, /bin/bash 3.2
+new  --secondmate-home-summary  rc=0    7.87s
+old  --secondmate-home-summary  rc=0  164.04s
+new  --json                     rc=0   22.31s
+old  --json                     rc=0  134.51s
+--secondmate-home-summary: old vs new JSON byte-identical (cmp)
+--json: identical after removing roots.fm_root (the tree path differs by construction)
+decisions_open total (counts.decisions_open) = 336; lab state/*.{status,meta} sha256 unchanged by all four snapshot runs

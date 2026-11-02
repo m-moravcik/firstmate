@@ -1,0 +1,286 @@
+{
+  "schema": "fm-secondmate-home-summary.v1",
+  "hold_classifier_schema": "fm-captain-hold-buckets.v1",
+  "contributions": {
+    "known": 0,
+    "checked": 0,
+    "counts": {
+      "captain": 0,
+      "fleet": 0,
+      "maintainer": 0,
+      "nobody": 0
+    },
+    "unmeasured": 0,
+    "complete": true,
+    "proven_clear": true,
+    "stale_verdicts": 0,
+    "missing_verdicts": 0,
+    "unreadable_records": 0,
+    "valid_until": 900,
+    "captain": [],
+    "captain_omitted": 0
+  },
+  "generated": "2026-11-02T12:00:00Z",
+  "generated_epoch": 1793620800,
+  "home": "/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.ThBDnu",
+  "valid": false,
+  "reason": "child current state unavailable: mate-alpha, mate-beta, mate-gamma, scout-done, ship-open",
+  "invalidity": {
+    "kind": "child_current_unavailable",
+    "ids": [
+      "mate-alpha",
+      "mate-beta",
+      "mate-gamma",
+      "scout-done",
+      "ship-open"
+    ]
+  },
+  "state": "unknown",
+  "active_children": [],
+  "decisions_open": [
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q155",
+      "verb": "needs-decision",
+      "summary": "choose option 155 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b241",
+      "verb": "blocked",
+      "summary": "waiting on external 241",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b253",
+      "verb": "blocked",
+      "summary": "waiting on external 253",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q257",
+      "verb": "needs-decision",
+      "summary": "choose option 257 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q266",
+      "verb": "needs-decision",
+      "summary": "choose option 266 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q300",
+      "verb": "needs-decision",
+      "summary": "choose option 300 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b294",
+      "verb": "needs-decision",
+      "summary": "re-asked mate-alpha-b294",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q55",
+      "verb": "needs-decision",
+      "summary": "re-asked mate-alpha-q55",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b327",
+      "verb": "blocked",
+      "summary": "waiting on external 327",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b342",
+      "verb": "blocked",
+      "summary": "waiting on external 342",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q344",
+      "verb": "needs-decision",
+      "summary": "choose option 344 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q339",
+      "verb": "needs-decision",
+      "summary": "re-asked mate-alpha-q339",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b360",
+      "verb": "blocked",
+      "summary": "waiting on external 360",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q363",
+      "verb": "needs-decision",
+      "summary": "choose option 363 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b297",
+      "verb": "needs-decision",
+      "summary": "re-asked mate-alpha-b297",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q280",
+      "verb": "needs-decision",
+      "summary": "re-asked mate-alpha-q280",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q375",
+      "verb": "needs-decision",
+      "summary": "choose option 375 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q388",
+      "verb": "needs-decision",
+      "summary": "choose option 388 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-b390",
+      "verb": "blocked",
+      "summary": "waiting on external 390",
+      "reason": null,
+      "source": "status"
+    },
+    {
+      "id": "mate-alpha",
+      "key": "mate-alpha-q394",
+      "verb": "needs-decision",
+      "summary": "choose option 394 for mate-alpha",
+      "reason": null,
+      "source": "status"
+    }
+  ],
+  "holds": [],
+  "queued": [],
+  "landed": [],
+  "endpoints": [
+    {
+      "id": "mate-alpha",
+      "state": "unknown",
+      "source": "none",
+      "endpoint": {
+        "target": "fm-lab:fm-mate-alpha",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-11-02T12:00:00Z",
+        "freshness": "fresh"
+      }
+    },
+    {
+      "id": "mate-beta",
+      "state": "unknown",
+      "source": "none",
+      "endpoint": {
+        "target": "fm-lab:fm-mate-beta",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-11-02T12:00:00Z",
+        "freshness": "fresh"
+      }
+    },
+    {
+      "id": "mate-gamma",
+      "state": "unknown",
+      "source": "none",
+      "endpoint": {
+        "target": "fm-lab:fm-mate-gamma",
+        "exists": false,
+        "agent_alive": "unknown",
+        "status": "absent",
+        "observed_at": "2026-11-02T12:00:00Z",
+        "freshness": "fresh"
+      }
+    },
+    {
+      "id": "scout-done",
+      "state": "unknown",
+      "source": "none",
+      "endpoint": {
+        "target": "fm-lab:fm-scout-done",
+        "exists": false,
+        "agent_alive": "not_checked",
+        "status": "absent",
+        "observed_at": "2026-11-02T12:00:00Z",
+        "freshness": "fresh"
+      }
+    },
+    {
+      "id": "ship-open",
+      "state": "unknown",
+      "source": "none",
+      "endpoint": {
+        "target": "fm-lab:fm-ship-open",
+        "exists": false,
+        "agent_alive": "not_checked",
+        "status": "absent",
+        "observed_at": "2026-11-02T12:00:00Z",
+        "freshness": "fresh"
+      }
+    }
+  ],
+  "counts": {
+    "active_children": 0,
+    "decisions_open": 336,
+    "holds": 0,
+    "queued": 0,
+    "landed": 0,
+    "endpoints": 5
+  },
+  "omitted": [
+    {
+      "surface": "decisions_open",
+      "count": 316
+    }
+  ]
+}

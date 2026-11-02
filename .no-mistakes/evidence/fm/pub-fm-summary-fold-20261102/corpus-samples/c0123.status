@@ -1,0 +1,5 @@
+resolved: [key=default]$HOME and `cmd`
+needs-decision:[key=captain-hold-q] 
+	
+blocked:   [key=k?]pick REST or RPC
+   

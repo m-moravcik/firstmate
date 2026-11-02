@@ -1,0 +1,28 @@
+$ [old] fm-captain-hold.sh complete origin-x --none   # status: a,b opened; a resolved -> b still open
+fm-captain-hold: origin origin-x still has open captain decisions in its status stream; hold a captain task for what remains, or answer them, before attesting --none
+exit=1
+$ [new] fm-captain-hold.sh complete origin-x --none   # status: a,b opened; a resolved -> b still open
+fm-captain-hold: origin origin-x still has open captain decisions in its status stream; hold a captain task for what remains, or answer them, before attesting --none
+exit=1
+$ [old] fm-captain-hold.sh complete origin-y-old --none   # a,b opened (both key positions), both resolved
+complete: origin-y-old captain-call inventory reviewed
+exit=0
+$ [new] fm-captain-hold.sh complete origin-y-new --none
+complete: origin-y-new captain-call inventory reviewed
+exit=0
+--- origin-y-old.meta
+kind=ship
+harness=claude
+project=sample
+decisions_reviewed=1
+decision_keys=
+--- origin-y-new.meta
+kind=ship
+harness=claude
+project=sample
+decisions_reviewed=1
+decision_keys=
+--- origin-x.meta (must be unchanged)
+kind=ship
+harness=claude
+project=sample

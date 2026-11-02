@@ -1,0 +1,89 @@
+held [corr=0123456789abcdef]:   [key=k?]  unicode žák ✓
+continuation prose without verb
+failed [key=nm-run1-step] 
+failed [corr=0123456789abcdef]:   [key=x.y-z_1]$HOME and `cmd`
+held [at=1793600000][at=1] [key=k*]:trailing spaces   
+needs-decision [key=d]:  question %s here
+Needs-decision: [key=Q9]  $HOME and `cmd`
+blocked:[key=default] $HOME and `cmd`
+needs-decision [key=]:with: colon: inside
+needs-decision [at=]: [key=nm-run1-step]pending-reply-missed: lost reply
+continuation prose without verb
+needs-decision: [key=captain-hold-q] pick REST or RPC
+done [key=k?] [corr=0123456789abcdef]: back\slash \n esc
+progress [key=default]:cr
+captain-held [key=default]: question %s here
+failed [key=remote-reply-continuity-z] 
+resolved [key=bad slug]:  
+held:   [key=c] unicode žák ✓
+working [at=1793600000] [key=c] [at=1793600000]: question %s here
+  failed [at=2026-11-02T10:30:00Z] [corr=0123456789abcdef]: 
+failed [key=remote-reply-continuity-z]: [key=zz] inside
+needs-decisions:   [key=a/b]glob * ? [x]
+continuation prose without verb
+progress [key=remote-reply-continuity-z]: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+blocked [key=]: [key=a] glob * ? [x]
+held [key=d]: 
+answered [key=]: cr
+note [key=nm-run1-step]:choose: A or B
+	
+captain-held [key=bad slug]:  tab	here
+blocked [key=k*]:question %s here
+captain-held [key=remote-reply-continuity-z]:trailing spaces   
+note [key=k*] [at=2026-11-02T10:30:00Z]: 
+Needs-decision [key=Q9]: [key=a/b] pending-reply-x: ok
+working [at=2026-11-02T10:30:00Z] [key=pending-reply-t1]: back\slash \n esc
+done [key=k?]: [at=1793600001] stamp in note
+  needs-decision [at=9999999999999] [key=c]: unicode žák ✓
+
+held [key=pending-reply-t1]: question %s here
+blocked [key=b]:with: colon: inside
+answered: [key=c]back\slash \n esc
+needs-decision [at=] [key=d]: glob * ? [x]
+failed [at=1793600000][at=1] [key=default] trailing words
+Needs-decision [key=default]:xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+needs-decision: pending-reply-missed: lost reply
+needs-decision [key=nm-run1-step]: [key=nm-run1-step] unicode žák ✓
+progress [at=2026-11-02T10:30:00Z] [key=a]:pick REST or RPC
+	
+blocked [at=9999999999999]: pick REST or RPC
+needs-decision:[key=c] cr
+blocked [key=x.y-z_1]
+  needs-decision [at=1793600000][at=1]: with: colon: inside
+captain-held [key=b]:with: colon: inside
+progress [key=nm-run1-step]: glob * ? [x]
+resolved [key=b]: $HOME and `cmd`
+working [key=d]: trailing spaces   
+failed:   [key=Q9] 
+captain-held:   [key=a]question %s here
+Needs-decision [at=1793600000] corr=0123456789abcdef [key=pending-reply-t1] [at=10:30]: unicode žák ✓
+  indented: prose
+blocked [at=10:30]:   [key=x.y-z_1]choose: A or B
+captain-held corr=xyz [key=]: quote ' and "
+resolved [at=1793600000] corr=xyz: with: colon: inside
+resolved: [key=c]  [at=1793600001] stamp in note
+failed:   [key=default] unicode žák ✓
+  answered [key=nm-run1-step]: pick REST or RPC
+Needs-decision [at=0123]:   [key=bad slug]    leading
+note [at=1793600000][at=1]: [key=bad slug]
+failed:   [key=d]tab	here
+needs-decision [at=2026-11-02T10:30:00Z] [key=x.y-z_1] trailing words
+resolved [at=10:30] [key=d]:trailing spaces   
+needs-decision: [key=k?]  question %s here
+progress [key=x.y-z_1] corr=xyz: [at=1793600001] stamp in note
+resolved: [key=a/b]pending-reply-x: ok
+  progress:   [key=a] pick REST or RPC
+held:[key=default]glob * ? [x]
+held [key=d]: back\slash \n esc
+continuation prose without verb
+resolved [key=captain-hold-q] 
+Needs-decision: back\slash \n esc
+  indented: prose
+held [at=2026-11-02T10:30:00Z] [key=]:
+answered:[key=remote-reply-continuity-z]  pick REST or RPC
+working:   [key=k?]choose: A or B
+resolved [key=x.y-z_1]:  xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+answered [key=x.y-z_1]:  cr
+answered [key=bad slug]:   leading
+answered [key=a]
+captain-held [at=]:   [key=][at=1793600001] stamp in note
