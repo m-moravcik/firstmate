@@ -1,0 +1,9 @@
+[head] reminder-only cycle exit=0 output:
+    check: open decision overdue: worker key=api age=1793598405s
+[head] .last-heartbeat mtime year after cycle: 2026 (was 2020)
+[head] triage log heartbeat lines:
+    [2026-11-02T07:03:27+0100] absorbed heartbeat (no captain-relevant change)
+[base] reminder-only cycle exit=0 output:
+    check: open decision overdue: worker key=api age=1793598412s
+[base] .last-heartbeat mtime year after cycle: 2020 (was 2020)
+[base] triage log heartbeat lines:

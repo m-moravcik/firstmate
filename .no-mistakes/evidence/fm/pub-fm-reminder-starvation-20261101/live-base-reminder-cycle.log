@@ -1,0 +1,17 @@
+[base] pre-step (reminders off) watcher output:
+    signal: /var/folders/v0/2bd6h_m579sdc18lkpn3k_3c0000gp/T//fm-lab.2gMN75/state/worker.status
+[base] queue rows after ack: 0
+registered: state/probe.check.sh
+[base] reminder-cycle watcher exit=0 output:
+    check: open decision overdue: worker key=api age=1793598371s
+[base] custom check executed in this cycle: NO
+[base] queued reminder check rows: 1
+[base] reminder ledger (backoff state):
+    worker	api	1000	1793599371	100[base] drain presents:
+    1793599371	3	check	open-decision:worker:api	check: open decision overdue: worker key=api age=1793598371s
+    OPEN DECISIONS (still open, folded from the durable status logs - not just the latest line):
+    worker [key=api] needs-decision: choose the API shape
+    OPEN DECISIONS: close one by answering it: bin/fm-send.sh <task> --resolve-key <key> '<answer>'
+[base] immediate re-run within backoff output:
+    (still running after 6s - no wake)
+[base] reminder rows after re-run: 1
