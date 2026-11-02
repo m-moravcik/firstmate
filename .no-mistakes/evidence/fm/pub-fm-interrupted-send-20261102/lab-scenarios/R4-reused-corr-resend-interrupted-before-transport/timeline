@@ -1,0 +1,6 @@
+00:28:29 another sender holds rsm metadata lock (as a concurrent in-flight send would)
+00:28:37 resend waiting on the lock; pending phase=awaiting_report; ssh calls so far=0
+00:28:37 caller sends SIGTERM to process group -55672
+00:28:38 fm-send exited rc=143
+00:28:38 after interrupt: pending phase=delivery_unknown delivered_epoch=; ssh calls by this resend=0; remote inbox=[/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/rsm-home/state/parent-route/rsm.inbox/001.msg ]
+00:29:05 after printed retry: remote inbox=[/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/rsm-home/state/parent-route/rsm.inbox/001.msg ]; pending phase=awaiting_report delivered_epoch=1793662145

@@ -1,0 +1,4 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/base/bin/fm-wake-lib.sh: line 1727: 91204 Done                    printf '%s' "$MESSAGE"
+     91205 Terminated: 15          | fm_run_timed "$FM_SEND_REMOTE_BUDGET" "$SCRIPT_DIR/fm-on.sh" --stdin "$TARGET_REMOTE_ID" fm-remote-secondmate-control.sh send-stdin "${REMOTE_SEND_ARGS[@]}"

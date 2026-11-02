@@ -1,0 +1,5 @@
+00:31:29 (+3s) fm-send still folding the decision ledger before delivery; no "starts now" line; inbox=[]
+00:31:29 caller sends SIGHUP to process group -26895
+00:31:29 fm-send exited rc=129
+00:31:29 after: inbox=[]; resolved lines for api-shape=0
+00:35:31 printed rerun rc=0 after 233s; inbox=[001.msg ]; latest api-shape line: resolved [key=api-shape]: answered: go with REST

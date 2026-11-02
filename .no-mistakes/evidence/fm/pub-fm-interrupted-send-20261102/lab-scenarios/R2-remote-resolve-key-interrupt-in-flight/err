@@ -1,0 +1,8 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: delivery to rsm starts now; no delivery step ran before this line
+fm-send: interrupted by SIGINT while the remote transport to secondmate rsm was in flight; remote completion is unknown, so the steer may already be recorded there.
+fm-send: --resolve-key upgrade-window: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent/state/rsm.status)
+fm-send: --resolve-key freeze-day: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent/state/rsm.status)
+fm-send: only this correlation-reusing resend is safe; it lands on the same remote inbox record if the first one arrived, and closes each --resolve-key decision once delivery confirms:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent FM_PENDING_REPLY_EXISTING_CORR=75ad6b64aabb0054 {run-worktree}/bin/fm-send.sh rsm --resolve-key upgrade-window --resolve-key freeze-day the\ weekend\,\ freeze\ Friday

@@ -1,0 +1,5 @@
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent
+WARNING: watcher still down (same stale episode; last beat: never, grace 300s) - full banner already printed this episode.
+fm-send: delivery to rsm starts now; no delivery step ran before this line
+fm-send: durably recorded in remote secondmate rsm's steering inbox
+fm-send: --resolve-key rollback-plan: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent/state/rsm.status)

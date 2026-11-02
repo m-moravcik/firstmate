@@ -1,0 +1,3 @@
+00:46:08 fm-send is inside the herdr send-text keystroke call (typed plane)
+00:46:08 caller sends SIGTERM to process group -79857
+00:46:09 fm-send exited rc=143

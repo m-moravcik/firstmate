@@ -1,0 +1,7 @@
+00:27:43 remote transport in flight (ssh shim pid 87536); remote inbox: []
+00:27:43 caller sends SIGTERM to process group -82165
+00:27:44 fm-send exited rc=143
+00:27:44 pending-reply 29042176080f8ef7 phase=delivery_unknown delivered_epoch=
+00:28:13 after fm-send died, the in-flight transport kept running: 1 remote leg fm-remote-secondmate-control.sh finished t=1793662093 rc=0
+00:28:13 remote inbox now: [/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/rsm-home/state/parent-route/rsm.inbox/001.msg ]
+00:28:13 parent pending-reply phase=delivery_unknown delivered_epoch= (fm-send never saw the result)

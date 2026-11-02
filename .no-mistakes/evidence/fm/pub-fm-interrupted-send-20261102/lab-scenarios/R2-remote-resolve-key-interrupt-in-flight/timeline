@@ -1,0 +1,11 @@
+00:29:15 remote transport in flight
+00:29:15 caller sends SIGINT to process group -23359
+00:29:15 fm-send exited rc=130
+00:29:15 rsm.status resolved lines: []
+00:29:51 in-flight transport finished after fm-send died: 1 remote leg fm-remote-secondmate-control.sh finished t=1793662190 rc=0; remote inbox=[001.msg 002.msg ]
+00:30:11 printed resend rc=0; remote inbox=[001.msg 002.msg ]; records carrying this body=1
+00:30:11 rsm.status keyed lines now:
+needs-decision [key=upgrade-window]: tonight or the weekend
+needs-decision [key=freeze-day]: friday or monday
+resolved [key=upgrade-window]: answered: the weekend, freeze Friday
+resolved [key=freeze-day]: answered: the weekend, freeze Friday

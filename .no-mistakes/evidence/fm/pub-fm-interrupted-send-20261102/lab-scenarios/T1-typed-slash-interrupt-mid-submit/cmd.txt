@@ -1,0 +1,1 @@
+$ FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent {run-worktree}/bin/fm-send.sh tl7 /compact

@@ -1,0 +1,24 @@
+ok - fm-send remote: large text steers use stdin instead of the SSH exec argument
+ok - fm-send remote: a text steer lands as a durable remote inbox record and exits 0 at enqueue
+ok - fm-send remote: the printed correlation-reusing resend deduplicates onto the same record
+ok - fm-send remote: a failed retry cannot erase an earlier ambiguous delivery
+ok - fm-send remote: fire-and-forget delivery is idempotent without reply recovery
+ok - remote control: send revalidates endpoint ownership under the metadata lock
+ok - fm-send remote: enqueue revalidates the parent route under its metadata lock
+ok - fm-send remote: expected host is enforced by final route validation
+ok - fm-send remote: a --resolve-key answer closes its decision at enqueue
+ok - fm-send remote: every remote text, harness-native included, rides the inbox
+ok - fm-send remote: a real remote failure still fails loudly with the remote diagnostics
+ok - fm-send remote: exit 3 from the remote leg is a failure, never a delivery claim
+ok - fm-send remote: ssh 255 fails with resend-safe guidance and preserves the expectation
+ok - fm-send remote: the remote leg is budget-bounded and stays idempotent across the bound
+ok - fm-send remote: a caller signal mid-transport reports each --resolve-key and the safe resend
+ok - fm-send remote: its own transport timeout reports each --resolve-key before the resend
+tests/fm-send-remote-delivery.test.sh: line 1018: 35611 Killed: 9               perl -e '$SIG{INT} = $SIG{QUIT} = "DEFAULT"; setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' env PATH="$fb:$PATH" FM_ROOT_OVERRIDE="$ROOT" FM_HOME="$home" FM_SEND_SETTLE=0 FM_SSH_BIN="$fb/fake-ssh" FM_SSH_LOG="$ssh_log" FM_SSH_COUNT="$ssh_log.count" FM_REMOTE_CODE_ROOT="$ROOT" ${envs[@]+"${envs[@]}"} "$SEND" "$@" > "$out" 2> "$err"
+ok - fm-send remote: a SIGKILL mid-transport leaves progress lines and verifiable state
+ok - fm-send remote: an interrupted correlation-reusing resend keeps the earlier unknown delivery
+ok - fm-send local: an unconfirmed submit exits 3 with an honest non-error report
+ok - fm-send local: an unconfirmed submit still never closes a --resolve-key decision
+ok - fm-send local: an unconfirmed secondmate send keeps its reply expectation armed
+all fm-send-remote-delivery tests passed
+exit=0

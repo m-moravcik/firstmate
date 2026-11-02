@@ -1,0 +1,4 @@
+00:31:12 (+2s) progress shows both closes appended; fm-send still in its post-close re-fold
+00:31:12 inbox=[001.msg ]
+00:31:12 caller sends SIGTERM to process group -5640
+00:31:12 fm-send exited rc=143

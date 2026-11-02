@@ -1,0 +1,3 @@
+00:26:41 inbox at interrupt time: [/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.JFTdzI/parent/state/tl2.inbox/001.msg ]
+00:26:41 caller sends SIGINT to process group -6708
+00:26:42 fm-send exited rc=130

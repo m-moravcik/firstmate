@@ -1,0 +1,4 @@
+00:46:20 [base 9224c902] remote transport in flight
+00:46:20 caller sends SIGTERM to process group -88885
+00:46:20 fm-send exited rc=143
+00:46:48 transport finished anyway: 1 remote leg fm-remote-secondmate-control.sh finished t=1793663208 rc=0; records with this body=1

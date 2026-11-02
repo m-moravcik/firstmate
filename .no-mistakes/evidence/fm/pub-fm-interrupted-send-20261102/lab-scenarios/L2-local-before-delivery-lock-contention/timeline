@@ -1,0 +1,4 @@
+00:27:02 a concurrent holder owns the task metadata lock
+00:27:08 fm-send still waiting on the lock; inbox: []
+00:27:08 caller sends SIGHUP to process group -41664
+00:27:09 fm-send exited rc=129

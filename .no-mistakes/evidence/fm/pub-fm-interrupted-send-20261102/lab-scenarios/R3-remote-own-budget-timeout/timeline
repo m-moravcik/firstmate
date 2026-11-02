@@ -1,0 +1,5 @@
+00:30:25 fm-send returned on its own rc=1
+00:30:34 pending-reply phase=delivery_unknown delivered_epoch=; transport killed at the budget (ssh shim never ran the remote leg)
+00:30:52 printed resend rc=0; records carrying this body=1; pending phase=awaiting_report delivered_epoch=1793662251
+needs-decision [key=rollback-plan]: keep or drop the old schema
+resolved [key=rollback-plan]: answered: keep the old schema for a week

@@ -1,0 +1,6 @@
+00:37:44 (+360s) both closes announced; fm-send is in its post-close re-fold
+00:37:44 caller sends SIGKILL to process group -48523
+00:37:44 fm-send exited rc=137
+api-shape -> resolved [key=api-shape]: answered: go with REST on postgres
+db-engine -> resolved [key=db-engine]: answered: go with REST on postgres
+inbox=[001.msg ]
