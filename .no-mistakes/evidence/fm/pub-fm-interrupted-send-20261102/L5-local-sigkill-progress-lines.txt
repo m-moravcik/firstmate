@@ -1,0 +1,14 @@
+== L5: local answer to t1 with --resolve-key api-shape, SIGKILL to the process group while the doorbell's Herdr call is wedged (no handler can run) ==
+wedged Herdr call: agent get w1:p1
+/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-sendlab-work.PoHfrT/lib.sh: line 20:  7497 Killed: 9               perl -e '$SIG{INT} = $SIG{QUIT} = "DEFAULT"; setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE PATH="$W/bin:$ORIG_PATH" FM_HOME="$P" FM_SEND_SETTLE=0 FM_SSH_BIN="$W/bin/lab-ssh" FM_LAB_SSH_COUNT="$W/runs/$label.ssh" FM_LAB_REMOTE_ROOT="$ROOT" ${envs[@]+"${envs[@]}"} "$SEND" "$@" > "$W/runs/$label.out" 2> "$W/runs/$label.err"
+--- fm-send exit status: 137 (137 = killed by SIGKILL)
+--- everything the caller holds (stderr, banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: delivery to t1 starts now; no delivery step ran before this line
+fm-send: durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg
+fm-send: --resolve-key api-shape: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+--- the header's documented read-only check, run with this send's state dir ($FM_HOME/state):
+grep -F '[key=api-shape]' "/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status" | tail -n 1 | grep '^resolved'
+resolved [key=api-shape] [at=1793683412]: answered: L5: go with REST
+check exit=0 (0 = closed)
+inbox records: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg 

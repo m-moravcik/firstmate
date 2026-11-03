@@ -1,0 +1,26 @@
+== L4 (ci-1 race): local answer to t1; SIGTERM after the enqueue's rename landed but before it returned, and the worker acks (mv into handled/) the record while fm-send's interruption scan reads it ==
+the enqueue's rename landed and the enqueue is wedged (pid 50717); root now holds: 001.msg
+--- fm-send exit status: 143
+--- worker acknowledgement raced the scan, moved: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg
+--- fm-send stderr (watcher-down banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: delivery to t1 starts now; no delivery step ran before this line
+fm-send: interrupted by SIGTERM after the steer was durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/handled/001.msg; it was delivered, so do not resend it.
+fm-send: --resolve-key api-shape: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status); close it without resending: printf '%s
+' resolved\ \[key=api-shape\]:\ answered:\ L4:\ go\ with\ REST >> /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status
+--- durable state: root=0 handled=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/handled/001.msg 
+L4: go with REST
+VERDICT: the report never says 'nothing was sent'
+--- running the printed manual close: printf '%s
+bash: -c: line 0: unexpected EOF while looking for matching `''
+bash: -c: line 1: syntax error: unexpected end of file
+close exit=2
+--- OPEN DECISIONS for api-shape:
+t1 [key=api-shape] needs-decision: REST or RPC?
+--- re-run: the printed manual close, pasted whole (it spans two lines because the quoted format holds a literal newline):
+printf '%s
+' resolved\ \[key=api-shape\]:\ answered:\ L4:\ go\ with\ REST >> /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status
+close exit=0
+resolved [key=api-shape]: answered: L4: go with REST
+--- OPEN DECISIONS for api-shape after the manual close:
+(closed)

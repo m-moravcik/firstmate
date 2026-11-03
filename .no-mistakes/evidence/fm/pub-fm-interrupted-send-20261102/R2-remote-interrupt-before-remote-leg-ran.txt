@@ -1,0 +1,17 @@
+== R2: plain remote steer to rsm (no --resolve-key); the link stalls BEFORE the remote leg runs; caller sends SIGINT ==
+transport attempt in flight (pid 36909); remote inbox: 0 records
+--- fm-send exit status: 130
+--- fm-send stderr (banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: interrupted by SIGINT while the remote transport to secondmate rsm was in flight; remote completion is unknown, so the steer may already be recorded there.
+fm-send: only this correlation-reusing resend is safe; it lands on the same remote inbox record if the first one arrived, and closes each --resolve-key decision once delivery confirms:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=bd49f7dfab1932c8 {run-worktree}/bin/fm-send.sh rsm R2:\ please\ rebase\ onto\ main
+(checked: no 'nothing was sent' / 'not sent' / 'unsent' wording)
+parent pending-reply: delivered_epoch= phase=delivery_unknown  marker: attempted=1793683571
+--- running the printed resend:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=bd49f7dfab1932c8 {run-worktree}/bin/fm-send.sh rsm R2:\ please\ rebase\ onto\ main
+resend exit=0
+notice: doorbell did not reach fm-remote:p1; the steer is durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.6d7E7m/state/parent-route/rsm.inbox/001.msg
+remote inbox after resend: 1 record(s)
+[fm-from-firstmate]⁣corr=bd49f7dfab1932c8 R2: please rebase onto main
+parent pending-reply: phase=awaiting_report delivered_epoch=1793683593 

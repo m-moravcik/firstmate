@@ -1,0 +1,11 @@
+== R0 baseline: the SAME fault as R1, driven against the pre-change fm-send.sh (base f641b44b, temp git checkout) ==
+remote record landed: 1
+/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-sendlab-work.PoHfrT/lib.sh: line 20: 58980 Terminated: 15          perl -e '$SIG{INT} = $SIG{QUIT} = "DEFAULT"; setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' env -u NO_MISTAKES_GATE -u FM_GATE_REFUSE_BYPASS -u FM_ROOT_OVERRIDE -u FM_STATE_OVERRIDE -u FM_DATA_OVERRIDE -u FM_CONFIG_OVERRIDE -u FM_PROJECTS_OVERRIDE PATH="$W/bin:$ORIG_PATH" FM_HOME="$P" FM_SEND_SETTLE=0 FM_SSH_BIN="$W/bin/lab-ssh" FM_LAB_SSH_COUNT="$W/runs/$label.ssh" FM_LAB_REMOTE_ROOT="$ROOT" ${envs[@]+"${envs[@]}"} "$SEND" "$@" > "$W/runs/$label.out" 2> "$W/runs/$label.err"
+--- base fm-send exit status: 143
+--- base fm-send stderr (banner trimmed) - everything the caller is told:
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+notice: doorbell did not reach fm-remote:p1; the steer is durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.6d7E7m/state/parent-route/rsm.inbox/001.msg
+/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-sendlab-work.PoHfrT/base/bin/fm-wake-lib.sh: line 1727: 65925 Done                    printf '%s' "$MESSAGE"
+     65930 Terminated: 15          | fm_run_timed "$FM_SEND_REMOTE_BUDGET" "$SCRIPT_DIR/fm-on.sh" --stdin "$TARGET_REMOTE_ID" fm-remote-secondmate-control.sh send-stdin "${REMOTE_SEND_ARGS[@]}"
+--- (end of output)
+pending-reply: delivered_epoch= phase=awaiting_report  marker: attempted=1793684393

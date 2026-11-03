@@ -1,0 +1,16 @@
+== R3: remote answer to rsm with --resolve-key ship-date; the remote record LANDS, the reply stalls, and fm-send's own FM_SEND_REMOTE_BUDGET=60 expires (no caller signal) ==
+--- fm-send exit status: 1
+--- transport log:
+06:26:54 attempt=1 mode=land-then-hang
+06:27:11 attempt=1 remote-leg-rc=0
+--- fm-send stderr (banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: delivery to rsm starts now; no delivery step ran before this line
+notice: doorbell did not reach fm-remote:p1; the steer is durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.6d7E7m/state/parent-route/rsm.inbox/001.msg
+fm-send: --resolve-key ship-date: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/rsm.status)
+error: steer to remote secondmate rsm is unconfirmed (the remote transport did not complete within its 60s budget; remote completion unknown). Only the correlation-reusing resend below is idempotent and lands on the same remote inbox record:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=740f020a02715a43 {run-worktree}/bin/fm-send.sh rsm --resolve-key ship-date R3:\ ship\ this\ weekend
+(checked: no 'nothing was sent' / 'not sent' / 'unsent' wording)
+remote inbox: 1 record(s)
+[fm-from-firstmate]⁣corr=740f020a02715a43 R3: ship this weekend
+parent pending-reply 740f020a02715a43: delivered_epoch= phase=delivery_unknown  marker: attempted=1793683614

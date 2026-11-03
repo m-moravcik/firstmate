@@ -1,0 +1,26 @@
+== R4 (F1): run R3's printed correlation-reusing resend while a concurrent sender to rsm holds rsm's parent metadata lock; SIGHUP while it waits, before its own transport starts ==
+resend command: FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=740f020a02715a43 {run-worktree}/bin/fm-send.sh rsm --resolve-key ship-date R3:\ ship\ this\ weekend
+concurrent sender pid=17332 holds rsm's metadata lock
+resend is polling the lock; pending-reply right now: phase=awaiting_report marker: attempted=1793683697
+--- resend exit status: 129
+--- resend stderr (banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: interrupted by SIGHUP before this attempt's delivery, so this attempt sent nothing; correlation 740f020a02715a43's earlier remote attempt to secondmate rsm is still unknown, so the steer may already be recorded there.
+fm-send: --resolve-key ship-date: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/rsm.status)
+fm-send: retry only with this correlation-reusing resend; it lands on the same remote inbox record if the earlier one arrived, and closes each --resolve-key decision once delivery confirms:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=740f020a02715a43 {run-worktree}/bin/fm-send.sh rsm --resolve-key ship-date R3:\ ship\ this\ weekend
+transport attempts made by this resend: 0
+(checked: never says 'nothing was sent to rsm' or 'rerunning the same command is safe')
+--- pending-reply after interruption: delivered_epoch= phase=delivery_unknown  marker: attempted=1793683697
+remote inbox (R3's attempt had landed): 1 record(s)
+--- running the resend R4 printed, lock free:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN FM_PENDING_REPLY_EXISTING_CORR=740f020a02715a43 {run-worktree}/bin/fm-send.sh rsm --resolve-key ship-date R3:\ ship\ this\ weekend
+resend exit=0
+fm-send: delivery to rsm starts now; no delivery step ran before this line
+notice: doorbell did not reach fm-remote:p1; the steer is durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.6d7E7m/state/parent-route/rsm.inbox/001.msg
+fm-send: durably recorded in remote secondmate rsm's steering inbox
+fm-send: --resolve-key ship-date: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/rsm.status)
+remote inbox: 1 record(s) - still the one R3 landed
+pending-reply: phase=awaiting_report delivered_epoch=1793683724 
+--- OPEN DECISIONS for ship-date:
+(closed)

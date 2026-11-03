@@ -1,0 +1,25 @@
+== L2: local steer to t1, SIGINT after fm-send entered the inbox enqueue (delivery phase) but before its record could land: a concurrent writer holds t1.inbox/.seq.lock ==
+concurrent inbox writer pid=51856 holds the sequence lock
+fm-send printed its delivery-start progress line and is polling the inbox sequence lock; sending SIGINT to its process group
+--- fm-send exit status: 130
+--- fm-send stderr (watcher-down banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: delivery to t1 starts now; no delivery step ran before this line
+fm-send: interrupted by SIGINT before delivery; nothing was sent to t1.
+fm-send: --resolve-key db-engine: NOT recorded (no resolved line for it in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+fm-send: nothing was sent, so rerunning the same command is safe:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN {run-worktree}/bin/fm-send.sh t1 --resolve-key db-engine L2:\ use\ postgres
+--- durable state after interruption
+inbox records (root + handled/): 0
+t1.status:
+needs-decision [key=db-engine]: postgres or sqlite?
+t1 metadata lock released by the handler? yes
+--- running the printed rerun from a fresh shell:
+FM_HOME=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN {run-worktree}/bin/fm-send.sh t1 --resolve-key db-engine L2:\ use\ postgres
+rerun exit=0
+fm-send: delivery to t1 starts now; no delivery step ran before this line
+fm-send: durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg
+fm-send: --resolve-key db-engine: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+inbox records now: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg 
+--- OPEN DECISIONS for db-engine after rerun:
+(closed)

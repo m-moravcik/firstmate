@@ -1,0 +1,29 @@
+== L3: local answer to t1 with two --resolve-key, SIGTERM while the doorbell's Herdr call to fm-lab-fmsend-intr-52298-3258:w1:p1 is wedged (after the durable enqueue) ==
+--- before: OPEN DECISIONS
+t1 [key=api-shape] needs-decision: REST or RPC?
+t1 [key=db-engine] needs-decision: postgres or sqlite?
+OPEN DECISIONS: <key> is the [key=...] printed before the verb; a token inside a note is prose, not a key.
+wedged Herdr call (pid, args): 99490 agent get w1:p1
+--- fm-send exit status: 143
+--- fm-send stderr (watcher-down banner trimmed):
+fm-gate-refuse: gate agent lifecycle permitted only against lab home /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN
+fm-send: delivery to t1 starts now; no delivery step ran before this line
+fm-send: durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg
+fm-send: --resolve-key api-shape: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+fm-send: --resolve-key db-engine: recorded (resolved line appended to /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+fm-send: interrupted by SIGTERM after the steer was durably recorded at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg; it was delivered, so do not resend it.
+fm-send: --resolve-key api-shape: recorded (resolved line present in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+fm-send: --resolve-key db-engine: recorded (resolved line present in /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.status)
+--- Herdr calls fm-send made (via the guarded lab helper):
+06:22:10 pane get w1:p1
+06:22:10 agent get w1:p1
+--- durable state after interruption
+inbox records: /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-lab.LnYLlN/state/t1.inbox/001.msg 
+L3: REST, and postgres
+t1.status:
+needs-decision [key=api-shape]: REST or RPC?
+needs-decision [key=db-engine]: postgres or sqlite?
+resolved [key=api-shape] [at=1793683328]: answered: L3: REST, and postgres
+resolved [key=db-engine] [at=1793683328]: answered: L3: REST, and postgres
+--- OPEN DECISIONS after interruption (fm-wake-drain.sh):
+(both closed)
