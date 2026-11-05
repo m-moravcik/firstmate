@@ -1,0 +1,120 @@
+[
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/pulls/8",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/pulls/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/issues/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "reviewThreads"
+    ]
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "GET",
+    "path": "/repos/acme/repo/pulls/8/reviews",
+    "graphql_fields": []
+  },
+  {
+    "identity": "owner_acme",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "headRefOid",
+      "reviewDecision"
+    ]
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/issues/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "reviewThreads"
+    ]
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/reviews",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "headRefOid",
+      "reviewDecision"
+    ]
+  }
+]

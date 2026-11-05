@@ -1,0 +1,30 @@
+[
+  {
+    "name": "Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority",
+    "result": "pass",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json; local-api-fixtures-proof/mapped-emu/projection.json",
+    "reason": "Real fm-contributions CLI and installed gh 2.103.0 ran against an isolated loopback TLS GitHub API with synthetic stored accounts. No tenant or production validation."
+  },
+  {
+    "name": "Local TLS API: absent mapping and unmapped owners retain ambient identity and merge readiness",
+    "result": "pass",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json; local-api-fixtures-proof/ambient-absent/data/delivery-0/contributions.json",
+    "reason": "Real fm-contributions CLI and installed gh 2.103.0 ran against an isolated loopback TLS GitHub API with synthetic stored accounts. No tenant or production validation."
+  },
+  {
+    "name": "Local CLI: malformed, duplicate, invalid-owner and unreadable configuration blocks every observation",
+    "result": "pass",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json; local-api-fixtures-proof/invalid-duplicate-owner/data/delivery-0/contributions.json",
+    "reason": "Real fm-contributions CLI and installed gh 2.103.0 ran against an isolated loopback TLS GitHub API with synthetic stored accounts. No tenant or production validation."
+  },
+  {
+    "name": "Local gh: missing stored login refuses fallback, remains in rotation and recovers after correction",
+    "result": "pass",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json; local-api-fixtures-proof/missing-login/data/delivery-0/contributions.json",
+    "reason": "Real fm-contributions CLI and installed gh 2.103.0 ran against an isolated loopback TLS GitHub API with synthetic stored accounts. No tenant or production validation."
+  }
+]

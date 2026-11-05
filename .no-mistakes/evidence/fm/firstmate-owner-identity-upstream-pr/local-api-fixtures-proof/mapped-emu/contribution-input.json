@@ -1,0 +1,91 @@
+{
+  "backlog": {
+    "present": true,
+    "path": "~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/local-api-fixtures-proof/mapped-emu/data/backlog.md",
+    "records": [
+      {
+        "links": [
+          "https://github.com/acme/repo/pull/8"
+        ],
+        "requires_child_metadata": false,
+        "body_excerpt": null,
+        "hold_bucket": null,
+        "structured": true,
+        "repo": "synthetic",
+        "blocked_by_ids": [],
+        "checked": false,
+        "priority": null,
+        "local_note": null,
+        "hold_kind": null,
+        "blocked_reason": null,
+        "done": null,
+        "blocked_by": null,
+        "kind": "ship",
+        "order": 1,
+        "raw": "- [ ] delivery-0 - Observe acme https://github.com/acme/repo/pull/8 (repo: synthetic) (kind: ship)",
+        "merged": null,
+        "completion": {
+          "date": null,
+          "verb": null
+        },
+        "hold_set": null,
+        "id": "delivery-0",
+        "hold_until": null,
+        "captain_actionable": false,
+        "title": "Observe acme",
+        "pr_url": "https://github.com/acme/repo/pull/8",
+        "hold_age_days": null,
+        "unresolved_blocker_ids": [],
+        "reported": null,
+        "current_role": "queued",
+        "hold_reason": null,
+        "body_lines": [],
+        "state": "queued",
+        "report_path": null,
+        "since": null
+      },
+      {
+        "blocked_reason": null,
+        "hold_kind": null,
+        "done": null,
+        "blocked_by": null,
+        "kind": "ship",
+        "raw": "- [ ] delivery-1 - Observe unlisted https://github.com/unlisted/repo/pull/8 (repo: synthetic) (kind: ship)",
+        "order": 2,
+        "merged": null,
+        "hold_set": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "links": [
+          "https://github.com/unlisted/repo/pull/8"
+        ],
+        "requires_child_metadata": false,
+        "structured": true,
+        "hold_bucket": null,
+        "repo": "synthetic",
+        "blocked_by_ids": [],
+        "body_excerpt": null,
+        "checked": false,
+        "priority": null,
+        "local_note": null,
+        "unresolved_blocker_ids": [],
+        "reported": null,
+        "body_lines": [],
+        "hold_reason": null,
+        "current_role": "queued",
+        "since": null,
+        "report_path": null,
+        "state": "queued",
+        "id": "delivery-1",
+        "hold_until": null,
+        "title": "Observe unlisted",
+        "captain_actionable": false,
+        "pr_url": "https://github.com/unlisted/repo/pull/8",
+        "hold_age_days": null
+      }
+    ]
+  },
+  "tasks": []
+}

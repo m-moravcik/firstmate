@@ -1,0 +1,49 @@
+{
+  "live_driver_exit_status": 0,
+  "live_scenarios": [
+    {
+      "name": "Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority",
+      "result": "pass"
+    },
+    {
+      "name": "Local TLS API: absent mapping and unmapped owners retain ambient identity and merge readiness",
+      "result": "pass"
+    },
+    {
+      "name": "Local CLI: malformed, duplicate, invalid-owner and unreadable configuration blocks every observation",
+      "result": "pass"
+    },
+    {
+      "name": "Local gh: missing stored login refuses fallback, remains in rotation and recovers after correction",
+      "result": "pass"
+    }
+  ],
+  "api_requests_by_synthetic_identity": {
+    "owner_acme": 18,
+    "personal": 27
+  },
+  "sampled_gh_command_shapes": 19,
+  "token_argv_violations": [],
+  "auth_switch_seen": false,
+  "stored_account_config_unchanged": true,
+  "observer_files_without_credentials": true,
+  "local_tls_server_shutdown_and_joined": true,
+  "remaining_driver_processes": [],
+  "worktree_status": "",
+  "baseline_regressions_exit_status": 0,
+  "setup_adjustments": "Initial fixture attempts used too few polling cycles or a 40-second driver timeout. The final run used a bounded polling loop and a larger driver timeout, with no product changes.",
+  "argv_evidence_sources": [
+    {
+      "path": "~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/attempt2-owned-process-argv.json",
+      "sampled_command_shapes": 15
+    },
+    {
+      "path": "~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/attempt3-owned-process-argv.json",
+      "sampled_command_shapes": 6
+    },
+    {
+      "path": "~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/owned-process-argv.json",
+      "sampled_command_shapes": 0
+    }
+  ]
+}

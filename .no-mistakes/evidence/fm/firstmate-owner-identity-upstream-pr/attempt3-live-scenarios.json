@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority",
+    "result": "fail",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json",
+    "reason": "AssertionError([{'url': 'https://github.com/acme/repo/pull/8', 'kind': 'pr', 'checked_at': None, 'error': None, 'observation': None, 'verdict': None, 'seen': [], 'pending': [], 'notified': []}, {'url': 'https://github.com/zcorp/repo/pull/8', 'kind': 'pr', 'checked_at': '2026-11-05T10:10:00Z', 'error': None, 'observation': {'head': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'state': 'open', 'draft': False, 'mergeable': 'mergeable', 'can_merge': False, 'review_decision': 'APPROVED', 'reviews': [], 'checks': [{'name': 'build', 'id': 101, 'status': 'completed', 'conclusion': 'success', 'started_at': '2026-11-05T10:00:00Z'}], 'events': [], 'absent_checks': []}, 'verdict': None, 'seen': [], 'pending': [], 'notified': [], 'threads': []}, {'url': 'https://github.com/unlisted/repo/pull/8', 'kind': 'pr', 'checked_at': '2026-11-05T10:05:00Z', 'error': None, 'observation': {'head': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'state': 'open', 'draft': False, 'mergeable': 'mergeable', 'can_merge': True, 'review_decision': 'APPROVED', 'reviews': [], 'checks': [{'name': 'build', 'id': 101, 'status': 'completed', 'conclusion': 'success', 'started_at': '2026-11-05T10:00:00Z'}], 'events': [], 'absent_checks': []}, 'verdict': None, 'seen': [], 'pending': [], 'notified': [], 'threads': []}])"
+  }
+]

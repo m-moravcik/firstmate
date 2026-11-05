@@ -1,0 +1,132 @@
+{
+  "backlog": {
+    "records": [
+      {
+        "priority": null,
+        "pr_url": "https://github.com/acme/repo/pull/8",
+        "since": null,
+        "captain_actionable": false,
+        "blocked_reason": null,
+        "merged": null,
+        "hold_kind": null,
+        "hold_set": null,
+        "body_excerpt": null,
+        "checked": false,
+        "hold_bucket": null,
+        "blocked_by_ids": [],
+        "repo": "synthetic",
+        "current_role": "queued",
+        "report_path": null,
+        "blocked_by": null,
+        "reported": null,
+        "title": "Observe acme",
+        "done": null,
+        "state": "queued",
+        "unresolved_blocker_ids": [],
+        "links": [
+          "https://github.com/acme/repo/pull/8"
+        ],
+        "id": "delivery-0",
+        "hold_age_days": null,
+        "hold_until": null,
+        "hold_reason": null,
+        "completion": {
+          "date": null,
+          "verb": null
+        },
+        "local_note": null,
+        "body_lines": [],
+        "requires_child_metadata": false,
+        "kind": "ship",
+        "structured": true,
+        "raw": "- [ ] delivery-0 - Observe acme https://github.com/acme/repo/pull/8 (repo: synthetic) (kind: ship)",
+        "order": 1
+      },
+      {
+        "raw": "- [ ] delivery-1 - Observe zcorp https://github.com/zcorp/repo/pull/8 (repo: synthetic) (kind: ship)",
+        "order": 2,
+        "body_lines": [],
+        "requires_child_metadata": false,
+        "structured": true,
+        "kind": "ship",
+        "hold_until": null,
+        "hold_reason": null,
+        "completion": {
+          "verb": null,
+          "date": null
+        },
+        "local_note": null,
+        "id": "delivery-1",
+        "hold_age_days": null,
+        "links": [
+          "https://github.com/zcorp/repo/pull/8"
+        ],
+        "unresolved_blocker_ids": [],
+        "state": "queued",
+        "done": null,
+        "title": "Observe zcorp",
+        "current_role": "queued",
+        "repo": "synthetic",
+        "report_path": null,
+        "blocked_by": null,
+        "reported": null,
+        "hold_bucket": null,
+        "blocked_by_ids": [],
+        "hold_kind": null,
+        "hold_set": null,
+        "body_excerpt": null,
+        "checked": false,
+        "blocked_reason": null,
+        "merged": null,
+        "since": null,
+        "captain_actionable": false,
+        "priority": null,
+        "pr_url": "https://github.com/zcorp/repo/pull/8"
+      },
+      {
+        "body_lines": [],
+        "kind": "ship",
+        "requires_child_metadata": false,
+        "structured": true,
+        "order": 3,
+        "raw": "- [ ] delivery-2 - Observe unlisted https://github.com/unlisted/repo/pull/8 (repo: synthetic) (kind: ship)",
+        "local_note": null,
+        "hold_until": null,
+        "hold_reason": null,
+        "completion": {
+          "date": null,
+          "verb": null
+        },
+        "links": [
+          "https://github.com/unlisted/repo/pull/8"
+        ],
+        "id": "delivery-2",
+        "hold_age_days": null,
+        "state": "queued",
+        "unresolved_blocker_ids": [],
+        "title": "Observe unlisted",
+        "done": null,
+        "hold_bucket": null,
+        "blocked_by_ids": [],
+        "blocked_by": null,
+        "reported": null,
+        "current_role": "queued",
+        "repo": "synthetic",
+        "report_path": null,
+        "merged": null,
+        "blocked_reason": null,
+        "body_excerpt": null,
+        "checked": false,
+        "hold_kind": null,
+        "hold_set": null,
+        "pr_url": "https://github.com/unlisted/repo/pull/8",
+        "priority": null,
+        "since": null,
+        "captain_actionable": false
+      }
+    ],
+    "present": true,
+    "path": "~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/local-api-fixtures-final/mapped-emu/data/backlog.md"
+  },
+  "tasks": []
+}

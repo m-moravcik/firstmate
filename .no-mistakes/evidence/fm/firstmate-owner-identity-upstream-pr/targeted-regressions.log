@@ -1,0 +1,8 @@
+1..4
+ok - a configured repository owner identity reads its private contribution per command
+ok - an owner with no configured identity keeps the ambient gh identity
+ok - a missing owner login is unavailable, stays in rotation and is never retired
+ok - a malformed owner identity configuration refuses every observation instead of using the ambient identity
+FM_TEST_COMPLETE
+
+exit_status=0

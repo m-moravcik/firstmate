@@ -1,0 +1,78 @@
+{
+  "known": 2,
+  "checked": 2,
+  "counts": {
+    "captain": 1,
+    "fleet": 0,
+    "maintainer": 1,
+    "nobody": 0
+  },
+  "unmeasured": 0,
+  "complete": true,
+  "proven_clear": false,
+  "stale_verdicts": 0,
+  "missing_verdicts": 0,
+  "unreadable_records": 0,
+  "valid_until": 1793873700,
+  "captain": [
+    {
+      "task": "delivery-1",
+      "url": "https://github.com/unlisted/repo/pull/8",
+      "kind": "pr",
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "reason": "checks green; merge approval needed",
+      "hold": null,
+      "verdict_freshness": null,
+      "verdict_head": null,
+      "verdict_source": null,
+      "checked_at": "2026-11-05T10:00:00Z"
+    }
+  ],
+  "captain_omitted": 0,
+  "rows": [
+    {
+      "task": "delivery-0",
+      "url": "https://github.com/acme/repo/pull/8",
+      "kind": "pr",
+      "checked_at": "2026-11-05T10:00:00Z",
+      "checked": true,
+      "final": false,
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "verdict": null,
+      "reviews": [],
+      "distinct_checks": 1,
+      "missing_verdicts": 0,
+      "pending_checks": 0,
+      "failed_checks": 0,
+      "stale_verdicts": 0,
+      "signals": [],
+      "actor": "maintainer",
+      "reason": "delivery awaits the maintainer",
+      "tasks": [
+        "delivery-0"
+      ]
+    },
+    {
+      "task": "delivery-1",
+      "url": "https://github.com/unlisted/repo/pull/8",
+      "kind": "pr",
+      "checked_at": "2026-11-05T10:00:00Z",
+      "checked": true,
+      "final": false,
+      "head": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "verdict": null,
+      "reviews": [],
+      "distinct_checks": 1,
+      "missing_verdicts": 0,
+      "pending_checks": 0,
+      "failed_checks": 0,
+      "stale_verdicts": 0,
+      "signals": [],
+      "actor": "captain",
+      "reason": "checks green; merge approval needed",
+      "tasks": [
+        "delivery-1"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority",
+    "result": "fail",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json",
+    "reason": "TypeError(\"'NoneType' object is not subscriptable\")"
+  }
+]

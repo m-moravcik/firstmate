@@ -1,0 +1,3 @@
+Real product: bin/fm-contributions.sh enroll -> arm -> generated contributions.check.sh -> snapshot; gh 2.103.0; loopback TLS proxy, synthetic accounts only.
+mapped-emu: bash state/contributions.check.sh -> exit 0; stdout=''; stderr=''
+SCENARIO FAIL: Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority TypeError("'NoneType' object is not subscriptable")

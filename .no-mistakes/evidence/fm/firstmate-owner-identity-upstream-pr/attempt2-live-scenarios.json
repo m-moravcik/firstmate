@@ -1,0 +1,9 @@
+[
+  {
+    "name": "Local TLS API: mapped EMU accounts read private PRs per owner and never grant merge authority",
+    "result": "fail",
+    "live": true,
+    "evidence": "live-transcript.log; local-api-requests.json",
+    "reason": "TimeoutExpired(['bash', '~/.no-mistakes/evidence/01M6PE6P3PVADA0A483VFFTGJX/local-api-fixtures-final/mapped-emu/state/contributions.check.sh'], 40)"
+  }
+]

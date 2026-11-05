@@ -1,0 +1,11 @@
+{
+  "sampled_gh_commands": [
+    "gh api repos/unlisted/repo/issues/8/comments?per_page=100 --paginate --slurp",
+    "gh api repos/zcorp/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses?per_page=100 --paginate --slurp",
+    "gh api repos/zcorp/repo/pulls/8/comments?per_page=100 --paginate --slurp",
+    "perl -e my $t = shift; my $pid = fork; die \"fork failed\" unless defined $pid; if (!$pid) { setpgrp(0, 0); exec @ARGV } local $SIG{ALRM} = sub { kill \"TERM\", -$pid; select undef, undef, undef, 0.2; kill \"KILL\", -$pid; exit 124 }; alarm $t; waitpid $pid, 0; exit(($? & 127) ? 128 + ($? & 127) : $? >> 8) 5 env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 gh api repos/unlisted/repo/issues/8/comments?per_page=100 --paginate --slurp",
+    "perl -e my $t = shift; my $pid = fork; die \"fork failed\" unless defined $pid; if (!$pid) { setpgrp(0, 0); exec @ARGV } local $SIG{ALRM} = sub { kill \"TERM\", -$pid; select undef, undef, undef, 0.2; kill \"KILL\", -$pid; exit 124 }; alarm $t; waitpid $pid, 0; exit(($? & 127) ? 128 + ($? & 127) : $? >> 8) 5 env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 gh api repos/zcorp/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses?per_page=100 --paginate --slurp",
+    "perl -e my $t = shift; my $pid = fork; die \"fork failed\" unless defined $pid; if (!$pid) { setpgrp(0, 0); exec @ARGV } local $SIG{ALRM} = sub { kill \"TERM\", -$pid; select undef, undef, undef, 0.2; kill \"KILL\", -$pid; exit 124 }; alarm $t; waitpid $pid, 0; exit(($? & 127) ? 128 + ($? & 127) : $? >> 8) 5 env GH_PROMPT_DISABLED=1 GH_NO_UPDATE_NOTIFIER=1 gh api repos/zcorp/repo/pulls/8/comments?per_page=100 --paginate --slurp"
+  ],
+  "token_argv_violations": []
+}

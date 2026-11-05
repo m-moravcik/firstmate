@@ -1,0 +1,179 @@
+[
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/issues/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "reviewThreads"
+    ]
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/reviews",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "headRefOid",
+      "reviewDecision"
+    ]
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "reviewThreads"
+    ]
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/pulls/8/reviews",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "GET",
+    "path": "/repos/unlisted/repo/issues/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "personal",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "headRefOid",
+      "reviewDecision"
+    ]
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/pulls/8",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/check-runs",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/issues/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/pulls/8/reviews",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "reviewThreads"
+    ]
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/pulls/8/comments",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "GET",
+    "path": "/repos/zcorp/repo/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/statuses",
+    "graphql_fields": []
+  },
+  {
+    "identity": "other_corp",
+    "method": "POST",
+    "path": "/graphql",
+    "graphql_fields": [
+      "headRefOid",
+      "reviewDecision"
+    ]
+  }
+]
