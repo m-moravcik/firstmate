@@ -1,0 +1,40 @@
+== S1/S2: child holds published to parent channel
+hold plain rc=0
+hold --until 2026-11-09 rc=0
+-- parent channel /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Aw49LC/parent/state/labmate.status:
+needs-decision [key=captain-hold-plain-call-1] [at=1794132981]: captain hold plain-call: plain choice pending
+needs-decision [key=captain-hold-dated-call-1] [until=2026-11-09] [at=1794132983]: captain hold dated-call: dated choice pending
+== S1: real watcher with only relayed captain holds overdue (6s window)
+watcher still waiting after 6s (no reminder) -> PASS
+watcher processes gone after 2 polls
+ls: /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fm-lab.Aw49LC/parent/state/.watch.lock: No such file or directory
+wake queue lines: 0
+== S1b: an ordinary overdue key in the same parent still wakes the real watcher
+watcher exit rc=0
+watcher stdout:
+check: open decision overdue: worker key=rollout age=12s
+wake queue:
+1794133006	1	check	open-decision:worker:rollout	check: open decision overdue: worker key=rollout age=12s
+== S2: dated relayed hold re-arms at 00:00 UTC 2026-11-09 (epoch 1794182400); plain hold never
+  tick now=1794182399 -> <none>
+  tick now=1794182400 -> check: open decision overdue: labmate key=captain-hold-dated-call-1 age=49417s
+  tick now=1794282400 -> check: open decision overdue: labmate key=captain-hold-dated-call-1 age=149417s
+== S3: malformed [until=] on a relayed hold re-arms at once (adversarial)
+  tick now=1794133017 -> check: open decision overdue: bad key=captain-hold-bad-1 age=5s
+== S4: unchanged republish keeps backoff; resolve+same-text reopen is fresh (threshold 100, cap 400)
+  tick now=1200 -> check: open decision overdue: w key=api age=200s
+  tick now=1300 -> check: open decision overdue: w key=api age=300s
+  + republish same text [at=1310]
+  tick now=1410 -> <none>
+  tick now=1450 -> <none>
+  tick now=1500 -> check: open decision overdue: w key=api age=500s
+  ledger: w	api	1000	1500	400
+  + resolved, then same-text reopen [at=5000] between ticks (separate processes)
+  tick now=5001 -> <none>
+  tick now=5099 -> <none>
+  tick now=5100 -> check: open decision overdue: w key=api age=100s
+  tick now=5199 -> <none>
+  tick now=5200 -> check: open decision overdue: w key=api age=200s
+  + changed note [at=5210]
+  tick now=5309 -> <none>
+  tick now=5310 -> check: open decision overdue: w key=api age=100s
