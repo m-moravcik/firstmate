@@ -1,0 +1,56 @@
+== claude version: 2.1.322 (Claude Code)
+== 1. real claude auth status through the helper (empty CLAUDE_CONFIG_DIR, no ambient token)
+{
+  "loggedIn": true,
+  "authMethod": "oauth_token",
+  "apiProvider": "firstParty",
+  "analyticsDisabled": false,
+  "projectsDirectory": "/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fmkc.ca0UWm/cfg/projects",
+  "configDirectory": "/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fmkc.ca0UWm/cfg",
+  "loginExpiresAt": null
+}
+rc=0
+== 1b. same claude auth status WITHOUT the helper (control)
+{
+  "loggedIn": false,
+  "authMethod": "none",
+  "apiProvider": "firstParty",
+  "analyticsDisabled": false,
+  "projectsDirectory": "/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fmkc.ca0UWm/cfg/projects",
+  "configDirectory": "/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fmkc.ca0UWm/cfg",
+  "loginExpiresAt": null
+}
+rc=1
+== 2. child argv vs env (token must be in env only)
+rc=0
+token occurrences in output: 1
+argv-self: bash -c echo "argv-self: $(ps -o args= -p $$)"; [ "$CLAUDE_CODE_OAUTH_TOKEN" = "<TOKEN>" ] && echo "env: CLAUDE_CODE_OAUTH_TOKEN matches the Keychain item (value withheld)"
+env: CLAUDE_CODE_OAUTH_TOKEN matches the Keychain item (value withheld)
+== 3. inherited SHELLOPTS=xtrace and bash -x
+rc=0 trace-lines=      76 token-in-trace=0
+rc=0 trace-lines=      76 token-in-trace=0
+-- last trace lines:
++ xtrace=1
++ set +x
++ exec env true
+== 4. missing Keychain item refuses, command never runs
+error: Claude token source /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fmkc.ca0UWm/missing.json: source macos-keychain is unavailable
+rc=3
+== 5. unsupported source refuses
+error: Claude token source /var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T//fmkc.ca0UWm/bad.json: malformed declaration: claude source must be one of macos-keychain
+rc=3
+== 6. security argv recorded (token never an argument)
+find-generic-password -s fm-lab-claude -a worker -w
+find-generic-password -a fxr -w -s Claude Code-credentials-c88d8a23
+find-generic-password -a fxr -w -s Claude Code-c88d8a23
+find-generic-password -a fxr -w -s Claude Code-credentials-c88d8a23
+find-generic-password -a fxr -w -s Claude Code-c88d8a23
+find-generic-password -s fm-lab-claude -a worker -w
+find-generic-password -s fm-lab-claude -a worker -w
+find-generic-password -s fm-lab-claude -a worker -w
+find-generic-password -s absent-item -a worker -w
+== 2 (redo). child argv vs env, no token literal in the probe
+child argv: bash -c echo "child argv: $(ps -o args= -p $$)"; echo "env token sha256 prefix: $(printf %s "$CLAUDE_CODE_OAUTH_TOKEN" | shasum -a 256 | cut -c1-16)"
+env token sha256 prefix: e97667c7d627d519
+expected sha256 prefix of Keychain item: e97667c7d627d519
+token occurrences in output: 0
