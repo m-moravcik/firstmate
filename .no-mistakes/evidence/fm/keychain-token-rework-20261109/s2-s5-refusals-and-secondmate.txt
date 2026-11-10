@@ -1,0 +1,39 @@
+### S2: pinned root signed in via apiKeyHelper (real claude) - control without source, then a missing Keychain item
+-- control: pin alone (stored login) --
+spawned ctl-ship harness=claude kind=ship mode=no-mistakes yolo=off window=firstmate:fm-ctl-ship worktree=$LAB/s2-nofallback/wt account=$LAB/s2-nofallback/pinned-root
+spawn rc=0
+launch.log bytes: 3444  task record: present
+security argv:
+  find-generic-password -a fxr -w -s Claude Code-6727e700
+  find-generic-password -a fxr -w -s Claude Code-credentials-6727e700
+-- with source naming a missing Keychain item --
+error: Claude token source $LAB/s2-nofallback/home/config/claude-account-credential-source.json: source macos-keychain is unavailable
+error: $LAB/s2-nofallback/home/config/claude-account-credential-source.json token could not be loaded; the launch never falls back to the stored login
+spawn rc=1
+launch.log bytes: 0  task record: absent
+security argv:
+  find-generic-password -s fm-lab-missing -a worker -w
+
+### S3a: credential source without a claude-account pin
+error: $LAB/s3-nopin/home/config/claude-account-credential-source.json requires a Claude account pin: $LAB/s3-nopin/home/config/claude-account
+spawn rc=1
+launch.log bytes: 0  task record: absent
+security argv:
+
+### S4: malformed source smuggling a token field
+error: malformed $LAB/s4-malformed/home/config/claude-account-credential-source.json - claude has unknown field token (allowed: source, service, account); credential values do not belong in this file
+spawn rc=1
+launch.log bytes: 0  task record: absent
+security argv:
+
+### S5: local secondmate pin with its own source; primary declares a different source
+warning: secondmate lab-mate sync skipped before launch: primary default-branch commit cannot be resolved
+fm-config-inherit: warning: skipped crew-harness for /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-kc.gzdKKN/s5-mate/lab-mate-home/config: destination does not allow inherited item (not gitignored or guard failed)
+spawned lab-mate harness=claude kind=secondmate mode=secondmate yolo=off window=firstmate:fm-lab-mate worktree=/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-kc.gzdKKN/s5-mate/lab-mate-home account=$LAB/s5-mate/mate-root
+spawn rc=0
+security argv (pre-launch check):
+  find-generic-password -s fm-lab-claude -a worker -w
+  find-generic-password -a fxr -w -s Claude Code-credentials-3c7989e7
+  find-generic-password -a fxr -w -s Claude Code-3c7989e7
+launch wraps mate source: fm-claude-token.sh' exec '$LAB/s5-mate/home/config/secondmate-accounts/lab-mate/claude-account-credential-source.json'
+token absent from mate case tree
