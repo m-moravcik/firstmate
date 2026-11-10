@@ -1,0 +1,5 @@
+$ FM_HOME=<lab> FM_SSH_BIN=<real /usr/bin/ssh -F lab-config:plain> bin/fm-on.sh plain fm-afk-start.sh   # under a 120x40 pty, no ssh-agent
+--- pty transcript ---
+REMOTE REACHED: fm-remote-entrypoint.sh 1 L1VzZXJzL2Z4ci8ubm8tbWlzdGFrZXMvd29ya3RyZWVzLzM4YWI3Y2IwNGUzOS8wMU03M1RUSlNQQThFV1FSM0NRUzA5UDZEWQ== L3ByaXZhdGUvdmFyL2ZvbGRlcnMvdGwvYnk5bDB4cHMzbDMyaGNwMWZkbmprMTA4MDAwMGdwL1QvZm0tc3NoLWxhYi42Tk53RDQvaG9tZQ== Zm0tYWZrLXN0YXJ0LnNoAA==
+
+--- exit: 0  elapsed: 0.66s ---

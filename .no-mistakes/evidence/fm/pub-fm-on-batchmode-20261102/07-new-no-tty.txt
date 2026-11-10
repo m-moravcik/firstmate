@@ -1,0 +1,3 @@
+$ (no tty, stdin closed) bin/fm-on.sh enc fm-afk-start.sh
+env: timeout: No such file or directory
+exit: 127 elapsed: 0s

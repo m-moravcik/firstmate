@@ -1,0 +1,5 @@
+$ FM_HOME=<lab> FM_SSH_BIN=<real /usr/bin/ssh -F lab-config:unk> bin/fm-on.sh unk fm-afk-start.sh   # under a 120x40 pty, no ssh-agent
+--- pty transcript ---
+Host key verification failed.
+
+--- exit: 255  elapsed: 0.38s ---

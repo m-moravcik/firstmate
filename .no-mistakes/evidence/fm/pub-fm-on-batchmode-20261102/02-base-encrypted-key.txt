@@ -1,0 +1,4 @@
+$ FM_HOME=<lab> FM_SSH_BIN=<real /usr/bin/ssh -F lab-config> bin/fm-on-base-tmp.sh enc fm-afk-start.sh   # under a 120x40 pty, no ssh-agent
+--- pty transcript ---
+Enter passphrase for key '/private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/key_enc': 
+--- exit: TIMEOUT(killed after 15s, still waiting)  elapsed: 15.20s ---

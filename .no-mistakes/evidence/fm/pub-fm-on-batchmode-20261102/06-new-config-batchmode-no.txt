@@ -1,0 +1,5 @@
+$ FM_HOME=<lab> FM_SSH_BIN=<real /usr/bin/ssh -F lab-config:encbatchno> bin/fm-on.sh enc fm-afk-start.sh   # under a 120x40 pty, no ssh-agent
+--- pty transcript ---
+fxr@127.0.0.1: Permission denied (publickey).
+
+--- exit: 255  elapsed: 0.31s ---

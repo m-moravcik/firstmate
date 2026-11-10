@@ -1,0 +1,20 @@
+Accepted key ED25519 SHA256:KAMQH/7lKlqLSG88i/Lw79cVMRs0cat9rMRTt8IkETY found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:1
+Connection closed by authenticating user fxr 127.0.0.1 port 54897 [preauth]
+Accepted key ED25519 SHA256:KAMQH/7lKlqLSG88i/Lw79cVMRs0cat9rMRTt8IkETY found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:1
+Connection closed by authenticating user fxr 127.0.0.1 port 54908 [preauth]
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted publickey for fxr from 127.0.0.1 port 55163 ssh2: ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted publickey for fxr from 127.0.0.1 port 55170 ssh2: ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted key ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:2
+Accepted publickey for fxr from 127.0.0.1 port 55181 ssh2: ED25519 SHA256:Vlmbb60O1MWXLDFUtICTj8FizXBrLiD1tZ2k8K9PnBs
+Accepted key ED25519 SHA256:KAMQH/7lKlqLSG88i/Lw79cVMRs0cat9rMRTt8IkETY found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:1
+Connection closed by authenticating user fxr 127.0.0.1 port 55196 [preauth]
+Connection closed by 127.0.0.1 port 55312 [preauth]
+Connection closed by 127.0.0.1 port 55315 [preauth]
+Accepted key ED25519 SHA256:KAMQH/7lKlqLSG88i/Lw79cVMRs0cat9rMRTt8IkETY found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:1
+Connection closed by authenticating user fxr 127.0.0.1 port 55474 [preauth]
+Accepted key ED25519 SHA256:KAMQH/7lKlqLSG88i/Lw79cVMRs0cat9rMRTt8IkETY found at /private/var/folders/tl/by9l0xps3l32hcp1fdnjk1080000gp/T/fm-ssh-lab.6NNwD4/authorized_keys:1

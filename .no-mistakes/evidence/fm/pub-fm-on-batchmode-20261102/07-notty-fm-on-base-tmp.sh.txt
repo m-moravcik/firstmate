@@ -1,0 +1,4 @@
+$ (detached session, no controlling tty, stdin /dev/null) bin/fm-on-base-tmp.sh enc fm-afk-start.sh
+stdout: 
+stderr: fxr@127.0.0.1: Permission denied (publickey).
+exit: 255 elapsed: 1.01s

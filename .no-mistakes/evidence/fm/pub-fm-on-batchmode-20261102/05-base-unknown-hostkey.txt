@@ -1,0 +1,7 @@
+$ FM_HOME=<lab> FM_SSH_BIN=<real /usr/bin/ssh -F lab-config:unk> bin/fm-on-base-tmp.sh unk fm-afk-start.sh   # under a 120x40 pty, no ssh-agent
+--- pty transcript ---
+The authenticity of host '[127.0.0.1]:54557 ([127.0.0.1]:54557)' can't be established.
+ED25519 key fingerprint is: SHA256:MN6lg3+MquQ3dFxq9bDP1OX/mHB6miMjw3Q4M8vtSfo
+This key is not known by any other names.
+Are you sure you want to continue connecting (yes/no/[fingerprint])? 
+--- exit: TIMEOUT(killed after 15s, still waiting)  elapsed: 15.15s ---
