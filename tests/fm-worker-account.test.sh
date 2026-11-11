@@ -1078,6 +1078,214 @@ test_account_list_secondmate_needs_its_own_pin() {
   pass "a list never chooses a secondmate's account: it needs its own pin and refuses --account"
 }
 
+# --- Claude weekly-use cap (config/claude-account-caps) ---------------------
+
+# cap_case <name>: a Claude home with a signed-in two-seat pool, ca first and
+# cm2 second, ca capped at 80% weekly use, and a fake quota-axi that answers
+# from $CASE/quota.json (absent: a failed read).
+cap_case() {
+  new_case "$1" claude
+  signed_in_claude_root "$CASE/ca"
+  signed_in_claude_root "$CASE/cm2"
+  printf '%s\n' "$CASE/ca" "$CASE/cm2" > "$HOME_DIR/config/claude-account"
+  printf '%s 80\n' "$CASE/ca" > "$HOME_DIR/config/claude-account-caps"
+  fm_fake_claude_quota "$FAKEBIN" "$CASE/quota.json" "$CASE/quota-calls"
+  : > "$CASE/quota-calls"
+}
+
+# cap_quota <lane-json>...: the snapshot the fake quota-axi answers with.
+cap_quota() {
+  printf '%s\n' "$@" | jq -s '{schemaVersion: 6, providers: .}' > "$CASE/quota.json"
+}
+
+test_claude_cap_default_pool_skips_an_account_not_under_its_cap() {
+  local out rc id=acct-cap-skip
+  cap_case cap-skip
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 85)"
+  out=$(spawn_ship "$id-over"); rc=$?
+  expect_code 0 "$rc" "a pool spawn without --account should skip an over-cap first line: $out"
+  assert_contains "$out" "account=$CASE/cm2" "the spawn should launch on the next declared line"
+  assert_contains "$out" "caps Claude account '$CASE/ca' at 80% weekly use" "the skip note should name the account and the cap"
+  assert_contains "$out" "weekly use 85% is at or over the cap" "the skip note should name the reading"
+  assert_grep "account=$CASE/cm2" "$HOME_DIR/state/$id-over.meta" "the task record should carry the skipped-to account"
+  [ "$(cat "$CASE/claude-checks")" = "$CASE/cm2" ] \
+    || fail "only the account the cap allowed should be sign-in checked: $(cat "$CASE/claude-checks")"
+  assert_equals "PROFILES=$CASE/ca SNAPSHOT_ENV=unset ARGS=--provider claude --full --json" "$(cat "$CASE/quota-calls")" \
+    "quota-axi should read the capped account once, without a fixture override"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/cm2" "$CASE/claude-worker" "the worker should run on the skipped-to account"
+
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 80)"
+  out=$(spawn_ship "$id-at"); rc=$?
+  expect_code 0 "$rc" "a first line exactly at its cap should be skipped: $out"
+  assert_contains "$out" "account=$CASE/cm2" "use at the cap is not under it"
+
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 79.5)"
+  : > "$CASE/claude-checks"
+  out=$(spawn_ship "$id-under"); rc=$?
+  expect_code 0 "$rc" "a first line under its cap should launch: $out"
+  assert_contains "$out" "account=$CASE/ca" "a capped account under its cap keeps the pool's first place"
+  assert_not_contains "$out" "skips it" "an account under its cap is not skipped"
+  [ "$(cat "$CASE/claude-checks")" = "$CASE/ca" ] || fail "the first line should be the one sign-in checked"
+  pass "a pool spawn without --account skips a capped account at or over its cap for the next declared line, in order"
+}
+
+test_claude_cap_refuses_an_explicit_account_not_under_its_cap() {
+  local out rc id=acct-cap-explicit
+  cap_case cap-explicit
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 92)"
+  out=$(spawn_ship "$id-over" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "--account naming an over-cap account must refuse"
+  assert_refused_before_launch "$id-over" "$out" "Claude account '$CASE/ca' capped at 80%"
+  assert_contains "$out" "weekly use 92% is at or over the cap: seven_day 92% used, refreshedAt" \
+    "the refusal should name the reading"
+  assert_contains "$out" "no flag or variable overrides the cap" "the refusal should say it cannot be bypassed"
+  assert_absent "$CASE/claude-checks" "a refused account must not be sign-in checked"
+  out=$(FM_CLAUDE_ACCOUNT_CAP=off FM_CLAUDE_PICK_WEEKLY_MAX=100 spawn_ship "$id-env" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "no environment variable may lift the cap"
+  assert_refused_before_launch "$id-env" "$out" "capped at 80%"
+  : > "$CASE/quota-calls"
+  out=$(spawn_ship "$id-other" --account "$CASE/cm2"); rc=$?
+  expect_code 0 "$rc" "--account naming an uncapped account should launch: $out"
+  assert_contains "$out" "account=$CASE/cm2" "the uncapped account should launch"
+  assert_equals "" "$(cat "$CASE/quota-calls")" "an uncapped account must not read quota"
+  pass "--account naming a capped account at or over its cap refuses with the account, reading, and cap, and nothing overrides it"
+}
+
+test_claude_cap_unknown_stale_or_unmatched_use_is_not_under_the_cap() {
+  local out rc id=acct-cap-unknown n=0 lanes
+  cap_case cap-unknown
+  rm -f "$CASE/quota.json"
+  out=$(spawn_ship "$id-failed" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "a failed quota read must refuse a capped account"
+  assert_refused_before_launch "$id-failed" "$out" "weekly use unknown, which never counts as under the cap: quota-axi printed no valid quota snapshot"
+  for lanes in \
+    "$(fm_claude_weekly_lane ca "$CASE/ca" 10 1200)" \
+    "$(fm_claude_weekly_lane ca "$CASE/ca" 10 30 rate_limited)" \
+    "$(fm_claude_weekly_lane ca "$CASE/ca" -)" \
+    "$(fm_claude_weekly_lane other "$CASE/other" 10)" \
+    "$(fm_claude_weekly_lane ca "$CASE/ca" 10 -3600)"; do
+    n=$((n + 1))
+    printf '%s\n' "$lanes" | jq -s '{schemaVersion: 6, providers: .}' > "$CASE/quota.json"
+    out=$(FM_CLAUDE_QUOTA_READING_MAX_AGE=999999 spawn_ship "$id-$n" --account "$CASE/ca"); rc=$?
+    expect_code 1 "$rc" "unknown weekly use #$n must refuse a capped account: $out"
+    assert_refused_before_launch "$id-$n" "$out" "weekly use unknown, which never counts as under the cap"
+  done
+  assert_contains "$out" "dated in the future" "a future reading should be named"
+  out=$(spawn_ship "$id-pool"); rc=$?
+  expect_code 0 "$rc" "a pool default should skip an unknown capped line for an uncapped one: $out"
+  assert_contains "$out" "account=$CASE/cm2" "the pool default should fall through to the uncapped line"
+  printf '%s 80\n%s 50\n' "$CASE/ca" "$CASE/cm2" > "$HOME_DIR/config/claude-account-caps"
+  rm -f "$CASE/quota.json"
+  out=$(spawn_ship "$id-none"); rc=$?
+  expect_code 1 "$rc" "a pool whose every line is capped with unknown use must refuse"
+  assert_refused_before_launch "$id-none" "$out" "no declared Claude account is under its weekly-use cap"
+  assert_contains "$out" "'$CASE/cm2' capped at 50%" "the refusal should name every capped account and its cap"
+  pass "an unknown, failed, stale, rate-limited, future, or unmatched weekly reading never counts as under the cap"
+}
+
+test_claude_cap_reuses_a_fresh_reading_of_the_same_account() {
+  local out rc id=acct-cap-reading
+  cap_case cap-reading
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 0 30 rate_limited)"
+  mkdir -p "$HOME_DIR/user-home/.local/state/quota-axi-refresh"
+  printf '%s\n' "$(fm_claude_weekly_lane ca "$CASE/ca" 40 60)" | jq -s '{schemaVersion: 6, providers: .}' \
+    > "$HOME_DIR/user-home/.local/state/quota-axi-refresh/ca.json"
+  out=$(QUOTA_AXI_SNAPSHOT="$CASE/forged.json" spawn_ship "$id-fresh" --account "$CASE/ca"); rc=$?
+  expect_code 0 "$rc" "a fresh same-account reading under the cap should launch: $out"
+  assert_contains "$out" "account=$CASE/ca" "the capped account should launch on the reused reading"
+  assert_contains "$(cat "$CASE/quota-calls")" "SNAPSHOT_ENV=unset" "a fixture override must never reach quota-axi"
+  printf '%s\n' "$(fm_claude_weekly_lane ca "$CASE/ca" 40 900)" | jq -s '{schemaVersion: 6, providers: .}' \
+    > "$HOME_DIR/user-home/.local/state/quota-axi-refresh/ca.json"
+  out=$(FM_CLAUDE_QUOTA_READING_MAX_AGE=3600 spawn_ship "$id-old" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "a reading older than 600 s must refuse even when the variable allows more"
+  assert_refused_before_launch "$id-old" "$out" "weekly use unknown"
+  pass "a capped account is measured from a fresh same-account reading, never one older than 600 s"
+}
+
+test_claude_cap_leaves_an_uncapped_launch_byte_identical() {
+  local a b id=acct-cap-inv
+  cap_case cap-invariant
+  normalize() {
+    sed -e "s/$1/<id>/g" -e 's/git-config\.s[0-9]*\.[0-9]*\.[0-9]*\.sh/git-config.<gen>.sh/g' \
+      -e 's#operational-inbox/[0-9]*-[0-9a-f]*\.msg#operational-inbox/<record>.msg#g' "$CASE/launch.log"
+  }
+  printf '%s\n' "$CASE/cm2" "$CASE/ca" > "$HOME_DIR/config/claude-account"
+  spawn_ship "$id-a" >/dev/null || fail "an uncapped first line beside a cap map should launch"
+  a=$(normalize "$id-a")
+  rm "$HOME_DIR/config/claude-account-caps"
+  spawn_ship "$id-b" >/dev/null || fail "the same launch without a cap map should succeed"
+  b=$(normalize "$id-b")
+  assert_equals "$b" "$a" "a cap map must not change an uncapped account's launch"
+  assert_equals "" "$(cat "$CASE/quota-calls")" "an uncapped launch must not read quota"
+  pass "an uncapped account launches byte for byte as before, without a quota read"
+}
+
+test_claude_cap_refuses_a_secondmate_respawn_on_its_recorded_account() {
+  local out rc id=acct-cap-sm
+  cap_case cap-secondmate
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 20)"
+  out=$(spawn_account_secondmate "$id" --account "$CASE/ca"); rc=$?
+  expect_code 0 "$rc" "a secondmate on a capped account under its cap should launch: $out"
+  assert_grep "account=$CASE/ca" "$HOME_DIR/state/$id.meta" "the secondmate record should carry its account"
+  "$FAKEBIN/tmux" kill-window -t "firstmate:fm-$id"
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 81)"
+  : > "$CASE/launch.log"
+  out=$(FM_FAKE_LAUNCH_LOG="$CASE/launch.log" fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" --secondmate); rc=$?
+  expect_code 1 "$rc" "a respawn on a recorded account over its cap must refuse: $out"
+  assert_contains "$out" "Claude account '$CASE/ca' capped at 80%" "the refusal should name the recorded account and cap"
+  assert_contains "$out" "weekly use 81% is at or over the cap" "the refusal should name the reading"
+  [ ! -s "$CASE/launch.log" ] || fail "a refused respawn must not launch: $(cat "$CASE/launch.log")"
+  pass "a local secondmate respawn refuses on its recorded account at or over its cap"
+}
+
+test_claude_cap_list_and_malformed_maps() {
+  local out rc id=acct-cap-bad n=0 body
+  cap_case cap-malformed
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 95)"
+  for body in "$CASE/other 80" "$CASE/ca 0" "$CASE/ca 101" "$CASE/ca 80%" "$CASE/ca 80"$'\n'"$CASE/ca 70" "$CASE/ca"; do
+    n=$((n + 1))
+    printf '%s\n' "$body" > "$HOME_DIR/config/claude-account-caps"
+    out=$(spawn_ship "$id-$n" --account "$CASE/cm2"); rc=$?
+    expect_code 1 "$rc" "malformed cap map #$n must refuse every Claude launch: $out"
+    assert_refused_before_launch "$id-$n" "$out" "config/claude-account-caps"
+  done
+  printf '%s 80\n' "$CASE/ca" > "$HOME_DIR/config/claude-account-caps"
+  rm "$HOME_DIR/config/claude-account"
+  out=$(spawn_ship "$id-unpinned"); rc=$?
+  expect_code 1 "$rc" "a cap map without declared accounts must refuse"
+  assert_refused_before_launch "$id-unpinned" "$out" "this launch has no declared Claude account"
+  declare_accounts "$CASE/ca" "$CASE/cm2"
+  out=$(spawn_ship "$id-list" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "a listed account over its cap must refuse"
+  assert_refused_before_launch "$id-list" "$out" "capped at 80% (weekly use 95% is at or over the cap"
+  out=$(spawn_ship "$id-list-ok" --account "$CASE/cm2"); rc=$?
+  expect_code 0 "$rc" "an uncapped listed account should launch: $out"
+  pass "a cap map refuses undeclared accounts, bad caps, repeats, and no declared accounts, and also governs config/claude-accounts"
+}
+
+# A list entry may carry a tab and its declaration file; a cap names the
+# account alone and still governs that entry.
+test_claude_cap_covers_a_list_entry_that_names_a_declaration_file() {
+  local out rc id=acct-cap-decl
+  cap_case cap-list-declaration
+  fake_macos_host
+  rm "$HOME_DIR/config/claude-account"
+  printf '%s\n' '{"claude":{"source":"macos-keychain","service":"fm-claude-token","account":"worker"}}' \
+    > "$HOME_DIR/config/claude-account-credential-source-ca.json"
+  declare_accounts "$CASE/ca"$'\t'claude-account-credential-source-ca.json "$CASE/cm2"
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 95)"
+  out=$(spawn_ship "$id-over" --account "$CASE/ca"); rc=$?
+  expect_code 1 "$rc" "a listed account with a declaration file must still refuse over its cap: $out"
+  assert_refused_before_launch "$id-over" "$out" "capped at 80% (weekly use 95% is at or over the cap"
+  cap_quota "$(fm_claude_weekly_lane ca "$CASE/ca" 40)"
+  out=$(spawn_ship "$id-under" --account "$CASE/ca"); rc=$?
+  expect_code 0 "$rc" "a listed account with a declaration file should launch under its cap: $out"
+  assert_contains "$out" "account=$CASE/ca" "the spawn should report the capped entry it launched on"
+  assert_contains "$out" "claude-account-credential-source-ca.json" "the entry should still launch on its declared token source"
+  pass "a weekly-use cap governs a list entry that names a declaration file"
+}
+
 test_claude_account_pool_keychain_sources() {
   local out rc id measured chosen
   new_case pool-keychain-dispatch claude
@@ -1329,5 +1537,13 @@ test_account_list_refusals
 test_claude_account_pool_keychain_sources
 test_pool_entry_keychain_read_failure_never_falls_back
 test_account_list_secondmate_needs_its_own_pin
+test_claude_cap_default_pool_skips_an_account_not_under_its_cap
+test_claude_cap_refuses_an_explicit_account_not_under_its_cap
+test_claude_cap_unknown_stale_or_unmatched_use_is_not_under_the_cap
+test_claude_cap_reuses_a_fresh_reading_of_the_same_account
+test_claude_cap_leaves_an_uncapped_launch_byte_identical
+test_claude_cap_refuses_a_secondmate_respawn_on_its_recorded_account
+test_claude_cap_list_and_malformed_maps
+test_claude_cap_covers_a_list_entry_that_names_a_declaration_file
 
 echo "# all fm-worker-account tests passed"

@@ -44,11 +44,56 @@ FM_QUOTA_PROVIDER_ID_RE='^[a-z0-9]+(-[a-z0-9]+)*\z'
 #                                  mapped; a model with no evidenced scope here
 #                                  keeps its caller's all_models fallback, and
 #                                  no mapping is derived for another family.
+#   quota_claude_entry_lane($lanes; $entry; $home)
+#                                  the one schema-6 claude lane a declared
+#                                  Claude account entry binds to through its
+#                                  --full accountLocator, or null:
+#                                  `ordinary` is the lane whose keychainService
+#                                  is exactly the unsuffixed
+#                                  `Claude Code-credentials` store, or, on a
+#                                  host whose lanes carry no keychainService at
+#                                  all, the lane at $home/.claude; a path is the
+#                                  lane at exactly that path whose
+#                                  keychainService is not the unsuffixed store.
+#   quota_claude_weekly($row; $max_age)
+#                                  {used, why}: the lane's `seven_day` window
+#                                  percentUsed when the lane is fresh, not
+#                                  stale, and its state.refreshedAt is at most
+#                                  $max_age seconds old (and not over 60 s in
+#                                  the future); otherwise used is null and why
+#                                  says which of those failed. A reused reading
+#                                  is judged by its own refreshedAt.
 # shellcheck disable=SC2016,SC2034  # jq program text, not shell expansion; read by the sourcing consumers
 FM_QUOTA_ROW_JQ='
   def quota_family_scope($provider; $model):
     if $provider == "claude" and (($model // "") | test("^claude-fable-[0-9]")) then "model:fable"
     else "" end;
+  def quota_claude_entry_lane($lanes; $entry; $home):
+    if $entry == "ordinary" then
+      if ([$lanes[] | .accountLocator.keychainService? // empty] | length) > 0 then
+        [$lanes[] | select(.accountLocator.keychainService? == "Claude Code-credentials")] | first
+      else
+        [$lanes[] | select(.accountLocator.path? == ($home + "/.claude"))] | first
+      end
+    else
+      [$lanes[] | select(.accountLocator.path? == $entry and
+        (.accountLocator.keychainService? // "") != "Claude Code-credentials")] | first
+    end;
+  def quota_claude_weekly($row; $max_age):
+    ($row.state.refreshedAt? // null) as $at_text |
+    (if ($at_text | type) == "string"
+     then (try ($at_text | sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) catch null)
+     else null end) as $at |
+    ([($row.windows? // [])[]? | select(.id? == "seven_day")] | first) as $week |
+    if $row == null then {used: null, why: "no quota-axi lane carries a locator for this account"}
+    elif ($row.state.status? // "unknown") != "fresh" or $row.state.stale? == true then
+      {used: null, why: "its quota-axi lane status is \($row.state.status? // "unknown")\(if $row.state.stale? == true then " and stale" else "" end)"}
+    elif $at == null then {used: null, why: "its lane carries no readable refreshedAt"}
+    elif (now - $at) > $max_age then {used: null, why: "its reading from \($at_text) is older than \($max_age)s"}
+    elif (now - $at) < -60 then {used: null, why: "its reading is dated in the future (\($at_text))"}
+    elif ($week.percentUsed? | type) != "number" then {used: null, why: "its lane reports no seven_day percentUsed"}
+    else {used: $week.percentUsed, why: "seven_day \($week.percentUsed)% used, refreshedAt \($at_text)"}
+    end;
   def quota_lane($harness; $model):
     if $harness == "codex" then "codex-home"
     elif ($harness == "pi" or $harness == "pi-signed") and (($model // "") | contains("/"))

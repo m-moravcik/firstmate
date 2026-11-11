@@ -74,6 +74,25 @@
 # token source" owns the operator contract, and fm_worker_account_select owns
 # which form wins when a pin has both a map line and a declaration file.
 #
+# An optional config/claude-account-caps caps declared Claude accounts for new
+# launches, one `<account> <percent>` line each (same reader and comment rule
+# as the token map): <account> is a declared line of config/claude-account or
+# entry of config/claude-accounts exactly, and <percent> an integer 1-100. A
+# launch selecting a capped account first reads that account's weekly use: the
+# `seven_day` percentUsed of its own quota-axi lane, bound by accountLocator
+# and measured fresh within 600 s (FM_CLAUDE_QUOTA_READING_MAX_AGE may only
+# shorten that), live or through fm_quota_reuse_readings
+# (fm_worker_account_claude_weekly). Only a reading under the cap launches; at
+# or over it, or unknown, stale, or unmatched, the account is refused for that
+# launch. A launch that named no account (a pool's default line) skips to the
+# next declared account that is uncapped or under its cap, in file order; a
+# named or recorded account (--account, a relaunch, a local secondmate
+# respawn) refuses instead. No flag or variable overrides that refusal, and it
+# governs new launches only: running workers are never stopped. An uncapped
+# account launches byte for byte as before, without a quota read. A malformed
+# map refuses every Claude launch, like a broken pool. docs/configuration.md
+# "Claude weekly-use cap" owns the operator contract.
+#
 # A local secondmate whose primary home holds
 # config/secondmate-accounts/<id>/<runner>-account launches from that directory
 # instead (fm_worker_account_config): its pin file, pool, recorded-account rule,
@@ -117,9 +136,13 @@
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-timeout-lib.sh"
 # shellcheck source=bin/fm-credential-source-lib.sh
 . "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-credential-source-lib.sh"
+# shellcheck source=bin/fm-quota-axi-lib.sh
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/fm-quota-axi-lib.sh"
 
 FM_WORKER_ACCOUNT_CHECK_SECONDS=${FM_WORKER_ACCOUNT_CHECK_SECONDS:-30}
 FM_WORKER_ACCOUNT_TOKEN_FILE=claude-account-tokens
+FM_WORKER_ACCOUNT_CAP_FILE=claude-account-caps
+FM_WORKER_ACCOUNT_QUOTA_SECONDS=60
 FM_WORKER_ACCOUNT_CREDENTIAL_SOURCE_FILE=claude-account-credential-source.json
 
 # fm_worker_account_has_credential_source <config-dir>
@@ -264,14 +287,16 @@ fm_worker_account_token_source_parse() {
 }
 
 # fm_worker_account_token_read <file>
-# Prints one "account<TAB>source" line per mapping of config/claude-account-tokens
-# in file order; a line starting with # is a comment, which is how one mapping
-# is disabled without deleting it. Same byte discipline as
+# Prints one "account<TAB>value" line per mapping of an `<account> <value>`
+# file - config/claude-account-tokens or config/claude-account-caps - in file
+# order; a line starting with # is a comment, which is how one mapping is
+# disabled without deleting it. Same byte discipline as
 # fm_worker_account_read. Returns 0 on
 # success, 3 when the file does not exist, 4 when it cannot be inspected (one
 # error already printed), 5 when it is not a readable regular file, and 6 when
-# it is malformed, printing the reason instead of mappings; the source grammar
-# is checked by the caller through fm_worker_account_token_source_parse.
+# it is malformed, printing the reason instead of mappings; the value grammar
+# is checked by the caller (fm_worker_account_token_source_parse for a token
+# source, fm_worker_account_cap_map for a cap).
 fm_worker_account_token_read() {
   perl -MErrno=ENOENT -e '
     my ($f) = @ARGV;
@@ -291,7 +316,7 @@ fm_worker_account_token_read() {
       if ($line =~ /[\x00-\x1f\x7f]/) { print "line $n holds a control character"; exit 6 }
       if ($line eq "") { print "line $n is blank"; exit 6 }
       next if $line =~ /\A#/;
-      if ($line !~ /\A(.+) ([^ ]+)\z/) { print "line $n is not <account> <source>"; exit 6 }
+      if ($line !~ /\A(.+) ([^ ]+)\z/) { print "line $n is not <account> <value>"; exit 6 }
       my ($account, $source) = ($1, $2);
       if ($account !~ /\A(?:ordinary|\/.*)\z/) { print "line $n maps \x27$account\x27, which is neither ordinary nor an absolute path"; exit 6 }
       if ($seen{$account}++) { print "line $n maps \x27$account\x27 a second time"; exit 6 }
@@ -397,6 +422,233 @@ fm_worker_account_token_source() {
 $out
 EOF_MAP
   return 0
+}
+
+# fm_worker_account_cap_map <config-dir> <declared> [<setting>]
+# Validates config/claude-account-caps against the declared Claude accounts
+# (<declared>: one account name per line, as config/claude-account or
+# config/claude-accounts holds them) and prints its "account<TAB>percent"
+# lines. Prints nothing and returns 0 when the home has no cap map. On refusal
+# - an unreadable or malformed file, a map with no declared accounts, an
+# undeclared or repeated account, or a cap outside 1-100 - prints one error
+# naming the file and returns 1. <setting> names the account file in that
+# refusal (default config/claude-account).
+fm_worker_account_cap_map() {
+  local config=$1 declared=$2 pin=${3:-config/claude-account} out rc account cap entry found list=''
+  local cfg="$config/$FM_WORKER_ACCOUNT_CAP_FILE" caps
+  caps="${pin%/*}/$FM_WORKER_ACCOUNT_CAP_FILE"
+  out=$(fm_worker_account_token_read "$cfg")
+  rc=$?
+  case "$rc" in
+  0) ;;
+  3) return 0 ;;
+  4) return 1 ;;
+  5)
+    echo "error: $caps must be a readable regular file: $cfg" >&2
+    return 1
+    ;;
+  *)
+    echo "error: $caps must hold one '<account> <percent>' line per capped Claude account - <account> a declared account exactly, one space, <percent> a whole number from 1 to 100 - with no blank lines or control characters ($out): $cfg" >&2
+    return 1
+    ;;
+  esac
+  if [ -z "$declared" ]; then
+    echo "error: $caps caps Claude accounts, but this launch has no declared Claude account ($pin is absent), so a capped account cannot be told apart from the ambient login; declare the accounts first, or remove the cap map: $cfg" >&2
+    return 1
+  fi
+  [ -n "$out" ] || return 0
+  while IFS= read -r entry; do
+    list="${list:+$list, }$entry"
+  done <<EOF_DECLARED
+$declared
+EOF_DECLARED
+  while IFS=$'\t' read -r account cap; do
+    found=0
+    while IFS= read -r entry; do
+      if [ "$entry" = "$account" ]; then
+        found=1
+        break
+      fi
+    done <<EOF_DECLARED
+$declared
+EOF_DECLARED
+    if [ "$found" != 1 ]; then
+      echo "error: $caps caps '$account', which $pin does not declare (declared: $list); cap a declared account exactly: $cfg" >&2
+      return 1
+    fi
+    if ! [[ $cap =~ ^(100|[1-9][0-9]?)$ ]]; then
+      echo "error: $caps caps '$account' at '$cap', which is not a whole number from 1 to 100: $cfg" >&2
+      return 1
+    fi
+  done <<EOF_MAP
+$out
+EOF_MAP
+  printf '%s\n' "$out"
+}
+
+# fm_worker_account_claude_snapshot <entry>...
+# Runs quota-axi once for the declared Claude account entries:
+#   env -u CLAUDE_CONFIG_DIR -u QUOTA_AXI_SNAPSHOT QUOTA_AXI_CLAUDE_PROFILES=<path
+#   entries joined by ':'> quota-axi --provider claude --full --json
+# bounded to FM_WORKER_ACCOUNT_QUOTA_SECONDS, so neither the caller's account
+# nor a fixture file answers for it. A path containing ':' cannot be named in
+# QUOTA_AXI_CLAUDE_PROFILES. A valid schema-6 result is passed through
+# fm_quota_reuse_readings. Sets FM_WORKER_ACCOUNT_SNAPSHOT to that JSON, or to
+# an empty schema-6 snapshot, and FM_WORKER_ACCOUNT_SNAPSHOT_REASON to why no
+# usable snapshot was read (empty when one was). Never prints or returns
+# failure; a missing reading is the caller's evidence.
+fm_worker_account_claude_snapshot() {
+  local entry profiles='' snapshot quota_rc=0
+  FM_WORKER_ACCOUNT_SNAPSHOT='{"schemaVersion":6,"providers":[]}'
+  FM_WORKER_ACCOUNT_SNAPSHOT_REASON=
+  for entry in "$@"; do
+    case "$entry" in
+    ordinary | *:*) ;;
+    *) profiles="${profiles:+$profiles:}$entry" ;;
+    esac
+  done
+  if ! command -v quota-axi >/dev/null 2>&1; then
+    FM_WORKER_ACCOUNT_SNAPSHOT_REASON="quota-axi is not installed"
+    return 0
+  fi
+  snapshot=$(fm_run_timed "$FM_WORKER_ACCOUNT_QUOTA_SECONDS" \
+    env -u CLAUDE_CONFIG_DIR -u QUOTA_AXI_SNAPSHOT QUOTA_AXI_CLAUDE_PROFILES="$profiles" \
+    quota-axi --provider claude --full --json 2>/dev/null </dev/null) || quota_rc=$?
+  if ! printf '%s\n' "$snapshot" | fm_quota_json_valid; then
+    if [ "$quota_rc" -eq 124 ]; then
+      FM_WORKER_ACCOUNT_SNAPSHOT_REASON="quota-axi did not answer within ${FM_WORKER_ACCOUNT_QUOTA_SECONDS}s"
+    else
+      FM_WORKER_ACCOUNT_SNAPSHOT_REASON="quota-axi printed no valid quota snapshot (exit $quota_rc)"
+    fi
+    return 0
+  fi
+  if [ "$(printf '%s\n' "$snapshot" | jq -r '.schemaVersion')" != 6 ]; then
+    FM_WORKER_ACCOUNT_SNAPSHOT_REASON="quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes"
+    return 0
+  fi
+  FM_WORKER_ACCOUNT_SNAPSHOT=$(printf '%s\n' "$snapshot" | fm_quota_reuse_readings)
+}
+
+# fm_worker_account_cap_max_age
+# Prints the oldest a weekly-use reading may be, in seconds, for the cap:
+# FM_CLAUDE_QUOTA_READING_MAX_AGE when it is a positive whole number no larger
+# than FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE (600), else that default, so a
+# variable can only make the freshness rule stricter.
+fm_worker_account_cap_max_age() {
+  local max=${FM_CLAUDE_QUOTA_READING_MAX_AGE:-$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE}
+  case "$max" in
+  '' | *[!0-9]* | 0) max=$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE ;;
+  esac
+  [ "$max" -le "$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE" ] || max=$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE
+  printf '%s\n' "$max"
+}
+
+# fm_worker_account_claude_weekly <entry>...
+# Prints one "index<TAB>used<TAB>evidence" line per entry, in argument order
+# (index from 0): used is the account's own weekly use in percent, or empty
+# when it is unknown, stale, or unmatched, and evidence names the reading or
+# why there is none. One fm_worker_account_claude_snapshot read serves every
+# entry; quota_claude_entry_lane binds each entry to its lane, and
+# quota_claude_weekly judges it fresh within fm_worker_account_cap_max_age.
+# Returns 1 only when the evidence cannot be evaluated.
+fm_worker_account_claude_weekly() {
+  local max declared
+  max=$(fm_worker_account_cap_max_age)
+  fm_worker_account_claude_snapshot "$@"
+  declared=$(printf '%s\n' "$@" | jq -R . | jq -s .) || return 1
+  # shellcheck disable=SC2016  # jq program text, not shell expansion.
+  printf '%s\n' "$FM_WORKER_ACCOUNT_SNAPSHOT" | jq -r \
+    --argjson declared "$declared" \
+    --arg home "${HOME:-}" \
+    --arg global "$FM_WORKER_ACCOUNT_SNAPSHOT_REASON" \
+    --argjson max "$max" "$FM_QUOTA_ROW_JQ"'
+    [.providers[]? | select(.provider == "claude" and (.accountKey | type) == "string")] as $lanes |
+    range(0; $declared | length) as $i | $declared[$i] as $e |
+    quota_claude_entry_lane($lanes; $e; $home) as $row |
+    (if $row != null then quota_claude_weekly($row; $max)
+     elif $global != "" then {used: null, why: $global}
+     elif ($e | contains(":")) and $e != "ordinary" then
+       {used: null, why: "a path containing : cannot be named in QUOTA_AXI_CLAUDE_PROFILES"}
+     else quota_claude_weekly(null; $max) end) as $w |
+    [$i, (if $w.used == null then "" else ($w.used | tostring) end),
+     ($w.why + (if $row.quotaReuse? == null then ""
+       else " via reading \($row.quotaReuse.file) refreshedAt \($row.quotaReuse.refreshedAt)" end))] | @tsv
+  '
+}
+
+# fm_worker_account_cap_guard <caps-label> <caps> <may-skip> <candidates>
+# The weekly-use cap decision for one Claude launch. <candidates> holds
+# "declared<TAB>root<TAB>providers" lines in declared order; <caps> the
+# "account<TAB>percent" lines of fm_worker_account_cap_map; <may-skip> is 1
+# when the launch named no account, so a capped account that is not under its
+# cap is skipped for the next declared one, and 0 when the launch named or
+# recorded one, so <candidates> is that one line and it refuses instead.
+# Prints the chosen candidate line. An uncapped first candidate is printed
+# without a quota read. A skip prints one note per skipped account on stderr;
+# a refusal prints one error naming each account, its reading, and its cap,
+# and returns 1. Nothing here can be overridden.
+fm_worker_account_cap_guard() {
+  local label=$1 caps=$2 skip=$3 candidates=$4 line declared cap i used why uncapped='' notes='' refusals=''
+  local -a lines=() names=() limits=() weekly=()
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    declared=${line%%$'\t'*}
+    cap=
+    while IFS=$'\t' read -r i used; do
+      [ "$i" != "$declared" ] || cap=$used
+    done <<EOF_CAPS
+$caps
+EOF_CAPS
+    if [ -z "$cap" ]; then
+      uncapped=$line
+      break
+    fi
+    lines+=("$line")
+    names+=("$declared")
+    limits+=("$cap")
+    [ "$skip" = 1 ] || break
+  done <<EOF_CANDIDATES
+$candidates
+EOF_CANDIDATES
+  if [ "${#names[@]}" -eq 0 ]; then
+    [ -n "$uncapped" ] && printf '%s\n' "$uncapped"
+    return 0
+  fi
+  weekly=()
+  while IFS= read -r line; do
+    weekly+=("$line")
+  done < <(fm_worker_account_claude_weekly "${names[@]}")
+  for i in "${!names[@]}"; do
+    line=${weekly[$i]:-}
+    used=${line#*$'\t'}
+    why=${used#*$'\t'}
+    used=${used%%$'\t'*}
+    [ -n "$line" ] || why="its quota reading could not be evaluated"
+    if [ -n "$line" ] && [ -n "$used" ] &&
+      awk -v u="$used" -v c="${limits[$i]}" 'BEGIN { exit !(u + 0 < c + 0) }'; then
+      [ -z "$notes" ] || printf '%s' "$notes" >&2
+      printf '%s\n' "${lines[$i]}"
+      return 0
+    fi
+    if [ -n "$used" ]; then
+      why="weekly use ${used}% is at or over the cap: $why"
+    else
+      why="weekly use unknown, which never counts as under the cap: $why"
+    fi
+    notes="${notes}note: $label caps Claude account '${names[$i]}' at ${limits[$i]}% weekly use for new launches ($why), so this launch skips it for the next declared account"$'\n'
+    refusals="${refusals:+$refusals; }'${names[$i]}' capped at ${limits[$i]}% ($why)"
+  done
+  if [ -n "$uncapped" ]; then
+    printf '%s' "$notes" >&2
+    printf '%s\n' "$uncapped"
+    return 0
+  fi
+  if [ "$skip" = 1 ]; then
+    echo "error: no declared Claude account is under its weekly-use cap in $label for a new launch: $refusals; this launch refuses - running workers are unaffected, and no flag or variable overrides the cap" >&2
+  else
+    echo "error: $label: Claude account $refusals, so this new launch on it refuses - running workers are unaffected, and no flag or variable overrides the cap; wait for a fresh reading under the cap, or launch on another declared account" >&2
+  fi
+  return 1
 }
 
 # fm_worker_account_entries <harness> <config-dir> [<setting>]
@@ -792,9 +1044,11 @@ fm_worker_account_request_valid() {
 # where provider is the Pi launch model's own (empty for Claude) and
 # token-source is what bin/fm-claude-token.sh loads the Claude account's token
 # from (empty for Pi and for an account that spends its stored login), after
-# the model guard and the sign-in check pass. On refusal prints one error and
-# returns 1. bin/fm-spawn.sh runs it before any endpoint exists, and
-# bin/fm-control.sh before a relaunch stops the live agent.
+# the weekly-use cap (fm_worker_account_cap_guard), the model guard, and the
+# sign-in check pass; the cap may move a launch that named no account to a
+# later pool line. On refusal prints one error and returns 1. bin/fm-spawn.sh
+# runs it before any endpoint exists, and bin/fm-control.sh before a relaunch
+# stops the live agent.
 #
 # A Claude account's token source has two declared forms, and one launch path
 # serves both. config/claude-account-tokens maps an account - a
@@ -811,7 +1065,8 @@ fm_worker_account_request_valid() {
 # for.
 fm_worker_account_select() {
   local harness=$1 config=$2 model=$3 executable=$4 raw=${5:-} mate=${6:-} account=${7:-}
-  local selection declared root providers word provider='' source='' selected_config setting listed count source_name='' source_file='' pool
+  local selection='' declared root providers word provider='' source='' selected_config setting listed count source_name='' source_file='' pool
+  local names candidates may_skip caps
   fm_worker_account_request_valid "$account" || return 1
   if [ -n "$account" ] && [ "$harness" != claude ]; then
     echo "error: --account names one declared Claude account and applies to Claude workers only, not ${harness:-a raw launch command}" >&2
@@ -865,10 +1120,41 @@ fm_worker_account_select() {
   else
     selection=$(fm_worker_account_resolve "$harness" "$selected_config" "$account" "$setting") || return 1
     if [ -z "$selection" ]; then
+      # An unpinned Claude launch cannot honor a cap map, so one refuses.
+      if [ "$harness" = claude ]; then
+        fm_worker_account_cap_map "$selected_config" "" "$setting" >/dev/null || return 1
+      fi
       [ "$selected_config" = "$config" ] && return 0
       echo "error: secondmate account pin disappeared during selection: $setting" >&2
       return 1
     fi
+  fi
+  if [ "$harness" = claude ]; then
+    # The weekly-use cap (config/claude-account-caps) sees every Claude launch
+    # here: the pool default, --account, a relaunch, and a local secondmate
+    # respawn. Only a launch that named no pool account may skip to the next
+    # declared line; a named or recorded one refuses.
+    if [ -n "$listed" ] && [ -z "$mate" ]; then
+      # A list entry may carry a tab and its declaration file; a cap names the
+      # account alone.
+      names=$(printf '%s\n' "$listed" | cut -f1)
+      candidates="$declared"$'\t'"$root"$'\t'
+      may_skip=0
+    else
+      candidates=$(fm_worker_account_entries "$harness" "$selected_config" "$setting") || return 1
+      names=$(printf '%s\n' "$candidates" | cut -f1)
+      may_skip=1
+      if [ -n "$account" ]; then
+        candidates=$selection
+        may_skip=0
+      fi
+    fi
+    caps=$(fm_worker_account_cap_map "$selected_config" "$names" "$setting") || return 1
+    if [ -n "$caps" ]; then
+      selection=$(fm_worker_account_cap_guard "${setting%/*}/$FM_WORKER_ACCOUNT_CAP_FILE" "$caps" "$may_skip" "$candidates") || return 1
+    fi
+  fi
+  if [ -n "$selection" ]; then
     declared=${selection%%$'\t'*}
     root=${selection#*$'\t'}
     providers=${root#*$'\t'}

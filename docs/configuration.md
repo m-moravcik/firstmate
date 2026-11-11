@@ -1679,7 +1679,7 @@ A home with several Claude seats can instead declare a Claude account pool, so f
 The pin is opt-in: without a home-wide or per-secondmate pin, pane-backed Claude launches keep receiving firstmate's own `CLAUDE_CONFIG_DIR` when it is set.
 Unpinned Pi launches use the destination pane's ambient account.
 
-Both files are local and gitignored, as is the optional [`config/claude-account-tokens`](#claude-token-source-configclaude-account-tokens) that gives a pooled Claude account a long-lived token.
+These files are local and gitignored, as are the optional [`config/claude-account-tokens`](#claude-token-source-configclaude-account-tokens) that gives a pooled Claude account a long-lived token and the optional [`config/claude-account-caps`](#claude-weekly-use-cap-configclaude-account-caps) that holds a Claude account back from new launches near the end of its week.
 
 | Runner | File | Variable the launch receives | `ordinary` means |
 | --- | --- | --- | --- |
@@ -1797,6 +1797,33 @@ The source file without its matching pin also refuses.
 On relaunch with an expired token, the check passes, the running worker is stopped, and the replacement fails on its first request; the local copy and its commits are kept, so store a fresh token and relaunch.
 
 [`bin/fm-worker-account-lib.sh`](../bin/fm-worker-account-lib.sh) owns how the source is bound to a pin, and [`bin/fm-claude-token.sh`](../bin/fm-claude-token.sh) loads it for the command; [`bin/fm-credential-source-lib.sh`](../bin/fm-credential-source-lib.sh) owns the shared source schema and adapters.
+
+### Claude weekly-use cap (config/claude-account-caps)
+
+A seat that other work also spends can be held back from new Firstmate launches once its week is mostly used.
+The optional local, gitignored `config/claude-account-caps` caps declared Claude accounts by weekly use, for example:
+
+```text
+/home/me/.claude-work 80
+```
+
+Each line is `<account> <percent>`: a line of `config/claude-account`, or an entry of `config/claude-accounts`, exactly, one space, and a whole number from 1 to 100.
+The account is everything before the last space, and a line starting with `#` is a comment, as in the [token map](#claude-token-source-configclaude-account-tokens).
+An account without a line is uncapped and launches byte for byte as before, without a quota read.
+An undeclared or repeated account, a cap outside 1-100, a blank line, a control character, or a cap map with no declared accounts refuses every Claude launch, like a malformed pool.
+
+Every new Claude launch on a capped account reads that account's weekly use first: the `seven_day` window's `percentUsed` from `quota-axi --provider claude --full --json`, bound to the account by its `--full` account locator and measured no more than 600 seconds ago, either live or from a [reused reading](../bin/fm-quota-axi-lib.sh) of the same account.
+Only use under the cap launches.
+Use at or over the cap refuses, and so does use that is unknown, stale, older than 600 seconds, rate-limited, or not matched to that exact account, because only a fresh reading of that account proves it is under its cap.
+`FM_CLAUDE_QUOTA_READING_MAX_AGE` can shorten the 600 seconds but never lengthen them, and no flag or variable lifts a refusal.
+
+The cap covers every Claude launch path from the home: a spawn without `--account`, a spawn with `--account`, a relaunch, and a local secondmate respawn; a remote secondmate home applies its own file.
+A launch that named no account, which in a pool means the first line, skips a capped account that is not under its cap and launches on the next declared line that is uncapped or under its own cap, in file order, printing a note that names the skipped account, its reading, and its cap.
+A launch that names or keeps an account - `--account`, a relaunch of a task on its recorded account, or a secondmate respawn on its recorded account - refuses instead, naming the account, its reading, and its cap; a single-line pin has no line to skip to and refuses the same way.
+A relaunch refuses before the running worker stops, and the cap never stops a running worker: it governs new launches only.
+`bin/fm-claude-account.sh pick` applies the same reading and never names a capped account that a launch would refuse.
+A per-secondmate pin's `claude-account-caps` beside it caps that pin's accounts, and the home-wide file does not apply to that secondmate.
+[`bin/fm-worker-account-lib.sh`](../bin/fm-worker-account-lib.sh) owns the reading, the skip, and the refusal texts.
 
 ### Failures, reporting, and inheritance
 

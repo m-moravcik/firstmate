@@ -1139,6 +1139,44 @@ test_worker_account_pin_follows_the_relaunch() {
   pass "fm-control relaunch: the replacement follows the home's current single-line worker account pin"
 }
 
+# The weekly-use cap (config/claude-account-caps): a relaunch on a recorded or
+# single-line account at or over its cap refuses before the running agent
+# stops, and one under its cap proceeds.
+test_capped_account_refuses_relaunch_before_stop() {
+  local dir out rc id=rl-acct-cap
+  dir=$(new_case acct-cap "$id")
+  add_ship_task "$dir" "$id" claude
+  make_claude_auth_stub "$dir"
+  fm_fake_claude_quota "$dir/fakebin" "$dir/quota.json" "$dir/quota-calls"
+  mkdir -p "$dir/home/config" "$dir/ca" "$dir/cm2"
+  : > "$dir/ca/.credentials.json"
+  : > "$dir/cm2/.credentials.json"
+  printf '%s\n' "$dir/ca" "$dir/cm2" > "$dir/home/config/claude-account"
+  printf '%s 80\n' "$dir/ca" > "$dir/home/config/claude-account-caps"
+  printf 'account=%s\n' "$dir/ca" >> "$dir/home/state/$id.meta"
+  fm_claude_weekly_lane ca "$dir/ca" 90 | jq -s '{schemaVersion: 6, providers: .}' > "$dir/quota.json"
+  cp "$dir/home/state/$id.meta" "$dir/meta-before"
+  out=$(run_control "$dir" "$id" relaunch --note "recorded account over its cap"); rc=$?
+  expect_code 1 "$rc" "a relaunch on a recorded account over its cap must refuse"$'\n'"$out"
+  assert_contains "$out" "Claude account '$dir/ca' capped at 80% (weekly use 90% is at or over the cap" \
+    "the refusal should name the recorded account, its reading, and its cap"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "an over-cap account must refuse before the running agent stops"
+  [ ! -s "$dir/fake/literal" ] || fail "an over-cap account must refuse before any lifecycle input is sent"
+  cmp -s "$dir/meta-before" "$dir/home/state/$id.meta" || fail "a refused relaunch must leave the task record untouched"
+  printf '%s\n' "$dir/ca" > "$dir/home/config/claude-account"
+  out=$(run_control "$dir" "$id" relaunch --note "single-line pin over its cap"); rc=$?
+  expect_code 1 "$rc" "a relaunch on a single-line pin over its cap must refuse, with no line to skip to"$'\n'"$out"
+  assert_contains "$out" "no declared Claude account is under its weekly-use cap" "the refusal should say no account is under its cap"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "a single-line pin over its cap must refuse before the running agent stops"
+  printf '%s\n' "$dir/ca" "$dir/cm2" > "$dir/home/config/claude-account"
+  fm_claude_weekly_lane ca "$dir/ca" 40 | jq -s '{schemaVersion: 6, providers: .}' > "$dir/quota.json"
+  out=$(run_control "$dir" "$id" relaunch --note "recorded account under its cap"); rc=$?
+  expect_code 0 "$rc" "a relaunch on a recorded account under its cap should succeed"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/ca" ] || fail "the relaunched record should keep the recorded account"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/ca'" "the replacement should launch on the recorded account"
+  pass "fm-control relaunch: a recorded or single-line account at or over its weekly-use cap refuses before the old agent stops"
+}
+
 # A pool task recorded on its second account: relaunch stays there while the
 # file declares it, refuses before stopping once it does not, and moves only on
 # an explicit --account.
@@ -3445,6 +3483,7 @@ test_same_harness_relaunch_keeps_the_profile_axes
 test_native_ultra_relaunch_preserves_profile_and_rejects_before_stop
 test_signed_out_worker_account_pin_refuses_before_stop
 test_worker_account_pin_follows_the_relaunch
+test_capped_account_refuses_relaunch_before_stop
 test_account_list_relaunch_reuses_the_recorded_account
 test_account_list_relaunch_uses_recorded_entry_keychain_source
 test_account_list_relaunch_moves_only_on_explicit_account

@@ -747,6 +747,43 @@ SH
   chmod +x "$fakebin/$tool"
 }
 
+# fm_fake_claude_quota <fakebin> <snapshot-file> <calls-log>
+# A fake quota-axi for the Claude weekly-use cap tests
+# (bin/fm-worker-account-lib.sh fm_worker_account_cap_guard). It prints
+# <snapshot-file> when it exists and exits 1 otherwise, like a failed read, and
+# appends one line per call naming QUOTA_AXI_CLAUDE_PROFILES, whether
+# QUOTA_AXI_SNAPSHOT reached it, and its arguments.
+fm_fake_claude_quota() {
+  local fakebin=$1 snapshot=$2 calls=$3
+  cat > "$fakebin/quota-axi" <<SH
+#!/usr/bin/env bash
+printf 'PROFILES=%s SNAPSHOT_ENV=%s ARGS=%s\n' "\${QUOTA_AXI_CLAUDE_PROFILES-unset}" "\${QUOTA_AXI_SNAPSHOT-unset}" "\$*" >> '$calls'
+[ -f '$snapshot' ] || exit 1
+cat '$snapshot'
+SH
+  chmod +x "$fakebin/quota-axi"
+}
+
+# fm_claude_weekly_lane <accountKey> <path> <seven_day percentUsed|-> [<age-seconds>] [<status>]
+# Prints one schema-6 claude lane whose accountLocator is <path> (a suffixed
+# Keychain store, as quota-axi publishes on macOS), refreshed <age-seconds>
+# ago (default 30), in state <status> (default fresh), with a seven_day window
+# at <percentUsed>; `-` omits the window's percentUsed.
+fm_claude_weekly_lane() {
+  jq -n --arg key "$1" --arg path "$2" --arg used "$3" --argjson age "${4:-30}" --arg status "${5:-fresh}" '
+    ((now - $age | floor) | strftime("%Y-%m-%dT%H:%M:%S.000Z")) as $at |
+    (if $used == "-" then null else ($used | tonumber) end) as $pct |
+    {provider: "claude", accountKey: $key,
+     accountLocator: {kind: "config-dir", path: $path, keychainService: ("Claude Code-credentials-" + $key)},
+     state: {status: $status, stale: ($status != "fresh"), refreshedAt: $at},
+     windows: [{id: "five_hour", percentUsed: 10, resetsAt: "2026-12-01T00:00:00Z"},
+               {id: "seven_day", percentUsed: $pct, resetsAt: "2026-12-05T00:00:00Z"}],
+     quotaSemantics: {status: "known", effectiveAvailability: [
+       {scope: "all_models", status: "known", effectivePercentRemaining: (100 - ($pct // 0)),
+        limitingWindowIds: ["seven_day"], runway: {status: "through_reset"},
+        selection: {status: "known", spendPriority: 0.5}}]}}'
+}
+
 # fm_fake_security <fakebin> <store-dir> <calls-log>
 # A fake macOS `security` for the Claude token source tests
 # (bin/fm-claude-token.sh). Generic-password items are files under

@@ -509,6 +509,38 @@ test_default_reading_directory_is_under_home() {
   pass "pick reads \$HOME/.local/state/quota-axi-refresh/*.json by default"
 }
 
+test_pick_never_names_an_account_not_under_its_weekly_cap() {
+  local out rc
+  pool "$WORK" "$MON"
+  printf '%s 80\n' "$WORK" > "$CFG/claude-account-caps"
+  snapshot 6 "$(fm_claude_weekly_lane work "$WORK" 90)" "$(fm_claude_weekly_lane mon "$MON" 30)"
+  out=$(pick); rc=$?
+  expect_code 0 "$rc" "pick should name the uncapped account: $out"
+  assert_contains "$out" "verdict=capped (config/claude-account-caps caps it at 80% weekly use for new launches, and its weekly use is at or over that: seven_day 90% used" \
+    "the capped account's lane line should carry the cap verdict and reading"
+  assert_equals "account: $MON" "$(printf '%s\n' "$out" | tail -1)" "pick should never name an account the launch would refuse"
+  snapshot 6 "$(fm_claude_weekly_lane work "$WORK" 50)" "$(fm_claude_weekly_lane mon "$MON" 30)"
+  out=$(pick); rc=$?
+  assert_equals "account: $WORK" "$(printf '%s\n' "$out" | tail -1)" "an account under its cap stays eligible: $out"
+  rm -f "$SNAPSHOT"
+  out=$(pick); rc=$?
+  expect_code 0 "$rc" "an unmeasured uncapped line should still be the disclosed default: $out"
+  assert_contains "$out" "weekly use is unknown" "the capped line should say its use is unknown"
+  assert_equals "account: $MON" "$(printf '%s\n' "$out" | tail -1)" "a capped line with unknown use must not be the unmeasured default"
+  printf '%s 80\n%s 90\n' "$WORK" "$MON" > "$CFG/claude-account-caps"
+  out=$(pick); rc=$?
+  expect_code 3 "$rc" "pick should report instead of naming a capped account with unknown use: $out"
+  assert_contains "$out" "not under its weekly-use cap" "the basis should name the cap"
+  pool "$WORK"
+  printf '%s 80\n' "$WORK" > "$CFG/claude-account-caps"
+  snapshot 6 "$(fm_claude_weekly_lane work "$WORK" 85)"
+  out=$(pick); rc=$?
+  expect_code 3 "$rc" "a single capped line over its cap should not be named: $out"
+  assert_equals 1 "$(wc -l < "$CALLS" | tr -d ' ')" "a single capped line should be measured once"
+  rm -f "$CFG/claude-account-caps"
+  pass "pick never names a capped account whose weekly use is not under its cap, and measures a single capped line"
+}
+
 test_two_measured_lanes_pick_the_highest_spend_priority
 test_model_scope_row_is_used_when_reported
 test_full_fable_model_id_uses_the_model_fable_scope
@@ -528,5 +560,6 @@ test_live_fresh_lane_beats_any_reading
 test_reading_selection_rules
 test_missing_or_unusable_reading_files_change_nothing
 test_default_reading_directory_is_under_home
+test_pick_never_names_an_account_not_under_its_weekly_cap
 
 echo "# all fm-claude-account tests passed"

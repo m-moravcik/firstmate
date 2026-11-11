@@ -50,6 +50,7 @@ After the harness and model decision lands on `claude` for any ship, scout, or l
 A relaunch stays on the task's recorded account; when that account is exhausted, a fresh pick's `account:` passed to `bin/fm-control.sh relaunch --account` is the deliberate switch.
 Report its `lane:` and `basis:` lines with the other candidate accounting, including an unmeasured default it discloses.
 Its exhausted exit means no declared account can take the work: stop and report it rather than spawning, and never edit the file to make room.
+A `capped` lane is an account [`config/claude-account-caps`](../../../docs/configuration.md#claude-weekly-use-cap-configclaude-account-caps) holds back because its weekly use is not proven under its cap; every launch on it refuses, so never name it with `--account` or relaunch onto it.
 The helper's header owns lane matching, ranking, and exit codes.
 
 ## Claude account list
@@ -59,6 +60,7 @@ Measure them with `bin/fm-claude-account-quota.sh [--model <model>]` instead of 
 It prints data only, never a choice: each account's applicable scopes and any uncertainty it could not measure.
 Apply the three gates below to each account's rows, taking a projected runway's time from the row's own `usableRunwaySeconds`, rank the eligible ones by their limiting scope's `spendPriority` exactly as for profiles, and pass the chosen entry as `--account <entry>`.
 A genuine tie or no rankable account is the same terminal case as below: decide in the open from the rows or ask the captain, never by file order.
+A declared account capped in `config/claude-account-caps` is ineligible unless its fresh weekly use is under its cap, because the launch refuses it otherwise.
 Account for every declared account in the rationale, including unmeasured ones.
 A typed-resolver `clear` profile for Claude still needs this step's `--account`.
 The account is chosen once, at intake: a relaunch keeps the recorded one, and only an explicit `--account` relaunch moves a task ([`docs/configuration.md`](../../../docs/configuration.md#several-claude-accounts-configclaude-accounts) owns the contract).

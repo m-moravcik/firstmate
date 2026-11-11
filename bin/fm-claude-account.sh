@@ -7,25 +7,17 @@
 #
 # Reads this home's config/claude-account (FM_CONFIG_OVERRIDE, else
 # $FM_HOME/config) through bin/fm-worker-account-lib.sh, which owns the pool
-# format and refuses a malformed pool. Without the file, or with one line,
-# there is nothing to choose: pick prints that account (`none` without a file,
-# meaning spawn without --account) and exits 0 without running quota-axi.
+# format and refuses a malformed pool or cap map. Without the file, or with one
+# line and no config/claude-account-caps, there is nothing to choose: pick
+# prints that account (`none` without a file, meaning spawn without --account)
+# and exits 0 without running quota-axi.
 #
-# With several lines, pick runs quota-axi once:
-#   env -u CLAUDE_CONFIG_DIR QUOTA_AXI_CLAUDE_PROFILES=<path entries joined
-#   by ':'> quota-axi --provider claude --full --json
-# bounded to 60 seconds, and validates the result with fm_quota_json_valid
-# from bin/fm-quota-axi-lib.sh. Each declared
-# entry is then bound to at most one schema-6 claude lane through the lane's
-# --full accountLocator:
-#   ordinary  the lane whose keychainService is exactly the unsuffixed
-#             `Claude Code-credentials` store; on a host whose lanes carry no
-#             keychainService at all (quota-axi publishes it only on macOS),
-#             the lane whose path is $HOME/.claude.
-#   <path>    the lane whose path equals the entry exactly and whose
-#             keychainService is not the unsuffixed default store.
-# A path containing ':' cannot be named in QUOTA_AXI_CLAUDE_PROFILES and stays
-# unmeasured.
+# Otherwise pick reads quota-axi once through fm_worker_account_claude_snapshot
+# in bin/fm-worker-account-lib.sh, which owns that bounded call, and binds each
+# declared entry to at most one schema-6 claude lane with
+# quota_claude_entry_lane in bin/fm-quota-axi-lib.sh, which owns the
+# accountLocator matching. A path containing ':' cannot be named in
+# QUOTA_AXI_CLAUDE_PROFILES and stays unmeasured.
 #
 # Quota is per account, not per machine. A lane quota-axi cannot read here (for
 # example a keychain locked to this session) is measured from a recent reading
@@ -47,14 +39,19 @@
 #               is above zero, and runway is not exhausted_now;
 #   exhausted   fresh and known, but at zero remaining or exhausted_now;
 #   unmeasured  anything else: no matching lane, no locator, a non-fresh state,
-#               no applicable or no known scope, or no usable quota-axi output.
+#               no applicable or no known scope, or no usable quota-axi output;
+#   capped      config/claude-account-caps caps it, and its weekly use, read
+#               exactly as the launch-time cap reads it (quota_claude_weekly),
+#               is unknown or at or over that cap, so a launch would refuse
+#               it. A capped entry is never chosen, not even as the
+#               unmeasured default.
 # Eligible lanes rank by the highest known spendPriority, ahead of eligible
 # lanes whose spendPriority is unknown; an exact tie goes to the earliest
 # resetsAt (the first limiting window's reset, as quota-axi's TOON shows it),
 # then to the earlier line in the file. With no eligible lane, the first
 # unmeasured entry in file order is chosen and marked as an unmeasured
-# default, never silently; when every entry is measured and exhausted, nothing
-# is chosen.
+# default, never silently; when every entry is exhausted or capped, nothing is
+# chosen.
 #
 # Output (stdout): one `lane:` evidence line per declared entry in file order
 # (entry, accountKey or `unmeasured`, scope, effectivePercentRemaining,
@@ -64,7 +61,8 @@
 #
 # Exit status: 0 an account was named; 1 the pool or its configuration was
 # refused (the error names the file); 2 usage error; 3 every declared account
-# is measured and exhausted, so the caller must report instead of spawning.
+# is measured and exhausted or capped, so the caller must report instead of
+# spawning.
 # FM_QUOTA_AXI_MIN is not raised for this helper: an older quota-axi without
 # account lanes or locators simply yields the disclosed unmeasured default.
 set -u
@@ -73,7 +71,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FM_ROOT="${FM_ROOT_OVERRIDE:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 FM_HOME="${FM_HOME:-${FM_ROOT_OVERRIDE:-$FM_ROOT}}"
 CONFIG="${FM_CONFIG_OVERRIDE:-$FM_HOME/config}"
-FM_CLAUDE_ACCOUNT_QUOTA_SECONDS=60
 FM_CLAUDE_ACCOUNT_EXHAUSTED_EXIT=3
 
 # shellcheck source=bin/fm-worker-account-lib.sh
@@ -135,44 +132,21 @@ while IFS= read -r line; do
 done <<EOF_ENTRIES
 $ENTRIES
 EOF_ENTRIES
-if [ "${#DECLARED[@]}" -eq 1 ]; then
+CAPS=$(fm_worker_account_cap_map "$CONFIG" "$(printf '%s\n' "${DECLARED[@]}")") || exit 1
+if [ "${#DECLARED[@]}" -eq 1 ] && [ -z "$CAPS" ]; then
   echo "basis: config/claude-account declares one account, so there is nothing to choose"
   echo "account: ${DECLARED[0]}"
   exit 0
 fi
+CAPS_JSON=$(printf '%s\n' "$CAPS" | jq -R 'select(length > 0) | split("\t") | {key: .[0], value: (.[1] | tonumber)}' | jq -s from_entries) || {
+  echo "error: could not read config/claude-account-caps" >&2
+  exit 1
+}
 
-PROFILES=
-for entry in "${DECLARED[@]}"; do
-  case "$entry" in
-  ordinary | *:*) ;;
-  *) PROFILES="${PROFILES:+$PROFILES:}$entry" ;;
-  esac
-done
-
-SNAPSHOT=
-GLOBAL_REASON=
-if ! command -v quota-axi >/dev/null 2>&1; then
-  GLOBAL_REASON="quota-axi is not installed"
-else
-  quota_rc=0
-  SNAPSHOT=$(fm_run_timed "$FM_CLAUDE_ACCOUNT_QUOTA_SECONDS" \
-    env -u CLAUDE_CONFIG_DIR QUOTA_AXI_CLAUDE_PROFILES="$PROFILES" \
-    quota-axi --provider claude --full --json 2>/dev/null </dev/null) || quota_rc=$?
-  if ! printf '%s\n' "$SNAPSHOT" | fm_quota_json_valid; then
-    if [ "$quota_rc" -eq 124 ]; then
-      GLOBAL_REASON="quota-axi did not answer within ${FM_CLAUDE_ACCOUNT_QUOTA_SECONDS}s"
-    else
-      GLOBAL_REASON="quota-axi printed no valid quota snapshot (exit $quota_rc)"
-    fi
-    SNAPSHOT=
-  elif [ "$(printf '%s\n' "$SNAPSHOT" | jq -r '.schemaVersion')" != 6 ]; then
-    GLOBAL_REASON="quota-axi reports no account lanes (schema 5); it predates per-account Claude lanes"
-    SNAPSHOT=
-  else
-    SNAPSHOT=$(printf '%s\n' "$SNAPSHOT" | fm_quota_reuse_readings)
-  fi
-fi
-[ -n "$SNAPSHOT" ] || SNAPSHOT='{"schemaVersion":6,"providers":[]}'
+fm_worker_account_claude_snapshot "${DECLARED[@]}"
+SNAPSHOT=$FM_WORKER_ACCOUNT_SNAPSHOT
+GLOBAL_REASON=$FM_WORKER_ACCOUNT_SNAPSHOT_REASON
+MAX_AGE=$(fm_worker_account_cap_max_age)
 
 DECLARED_JSON=$(printf '%s\n' "${DECLARED[@]}" | jq -R . | jq -s .)
 
@@ -183,21 +157,12 @@ RESULT=$(printf '%s\n' "$SNAPSHOT" | jq -r \
   --argjson declared "$DECLARED_JSON" \
   --arg model "$MODEL" \
   --arg home "${HOME:-}" \
-  --arg global "$GLOBAL_REASON" "$FM_QUOTA_ROW_JQ"'
+  --arg global "$GLOBAL_REASON" \
+  --argjson caps "$CAPS_JSON" \
+  --argjson max_age "$MAX_AGE" "$FM_QUOTA_ROW_JQ"'
   def str: if . == null then "unknown" else tostring end;
   [.providers[]? | select(.provider == "claude" and (.accountKey | type) == "string")] as $lanes |
-  ([$lanes[] | .accountLocator.keychainService? // empty] | length > 0) as $keychains |
-  def lane($e):
-    if $e == "ordinary" then
-      if $keychains then
-        [$lanes[] | select(.accountLocator.keychainService? == "Claude Code-credentials")] | first
-      else
-        [$lanes[] | select(.accountLocator.path? == ($home + "/.claude"))] | first
-      end
-    else
-      [$lanes[] | select(.accountLocator.path? == $e and
-        (.accountLocator.keychainService? // "") != "Claude Code-credentials")] | first
-    end;
+  def lane($e): quota_claude_entry_lane($lanes; $e; $home);
   def scope_of($row):
     ($row.quotaSemantics.effectiveAvailability // []) as $s |
     quota_family_scope("claude"; $model) as $family |
@@ -211,6 +176,9 @@ RESULT=$(printf '%s\n' "$SNAPSHOT" | jq -r \
       select(.id == $id) | (.resetsAt // empty)] | first;
   [range(0; $declared | length) as $i | $declared[$i] as $e | lane($e) as $row |
     (if $row == null then null else scope_of($row) end) as $sc |
+    (if $caps[$e] == null then null
+     elif $row == null and $global != "" then {used: null, why: $global}
+     else quota_claude_weekly($row; $max_age) end) as $wk |
     {idx: $i, entry: $e,
      fallback: ($model != "" and $sc != null and $sc.scope == "all_models"),
      key: ($row.accountKey // "unmeasured"),
@@ -221,7 +189,10 @@ RESULT=$(printf '%s\n' "$SNAPSHOT" | jq -r \
      resets: (if $sc == null then null else reset_of($row; $sc) end),
      via: (if $row.quotaReuse? == null then null
        else "via reading \($row.quotaReuse.file) refreshedAt \($row.quotaReuse.refreshedAt)" end)} |
-    if $row == null then
+    if $wk != null and ($wk.used == null or $wk.used >= $caps[$e]) then
+      .verdict = "capped" |
+      .reason = "config/claude-account-caps caps it at \($caps[$e])% weekly use for new launches, and its weekly use is \(if $wk.used == null then "unknown" else "at or over that" end): \($wk.why)"
+    elif $row == null then
       .verdict = "unmeasured" |
       .reason = (if $global != "" then $global
         elif ($e | contains(":")) and $e != "ordinary" then "a path containing : cannot be named in QUOTA_AXI_CLAUDE_PROFILES"
@@ -259,7 +230,10 @@ RESULT=$(printf '%s\n' "$SNAPSHOT" | jq -r \
     ([$rows[] | select(.verdict == "unmeasured")] | first) as $first |
     ["choice", $first.idx, "UNMEASURED DEFAULT: no account is measurably eligible (\($first.reason)), so the first unmeasured line in config/claude-account is used without quota evidence"] | @tsv
   else
-    ["exhausted", "-", "every declared Claude account is measured and exhausted; report instead of spawning"] | @tsv
+    (if ([$rows[] | select(.verdict == "capped")] | length) > 0
+     then "no declared Claude account is eligible: each is measured and exhausted or not under its weekly-use cap in config/claude-account-caps; report instead of spawning"
+     else "every declared Claude account is measured and exhausted; report instead of spawning" end) as $why |
+    ["exhausted", "-", $why] | @tsv
   end
 ') || {
   echo "error: could not evaluate the quota-axi snapshot for config/claude-account" >&2
