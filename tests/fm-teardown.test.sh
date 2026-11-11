@@ -3132,7 +3132,7 @@ test_secondmate_pr_ready_line_waits_for_green_when_opted_in() {
   case_dir=$(make_case mate-pr-ready-green)
   configure_secondmate_home "$case_dir" local "$case_dir/parent"
   mkdir -p "$case_dir/parent/state" "$case_dir/home/config"
-  channel="$case_dir/parent/state/mate-x.status"
+  channel="$case_dir/parent/state/mate-x.digest"
   write_meta "$case_dir" no-mistakes ship
   wt_commit_file "$case_dir" feature.txt hello "add feature"
   pr_head=$(git -C "$case_dir/wt" rev-parse HEAD)
@@ -3180,7 +3180,7 @@ test_secondmate_pr_ready_line_follows_green_report_with_trailing_text() {
   case_dir=$(make_case mate-pr-ready-green-text)
   configure_secondmate_home "$case_dir" local "$case_dir/parent"
   mkdir -p "$case_dir/parent/state" "$case_dir/home/config"
-  channel="$case_dir/parent/state/mate-x.status"
+  channel="$case_dir/parent/state/mate-x.digest"
   write_meta "$case_dir" no-mistakes ship
   wt_commit_file "$case_dir" feature.txt hello "add feature"
   pr_head=$(git -C "$case_dir/wt" rev-parse HEAD)
