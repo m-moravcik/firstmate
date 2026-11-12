@@ -1,0 +1,4 @@
+ok - fm-control relaunch: a declared account list keeps the account the task records
+ok - fm-control relaunch: the recorded Claude pool entry reuses its Keychain source
+ok - fm-control relaunch: only an explicit --account moves a task to another declared account
+ok - fm-control relaunch: undeclared, newline-split, signed-out, unrecorded, retired, and wrong-runner accounts refuse before the old agent stops

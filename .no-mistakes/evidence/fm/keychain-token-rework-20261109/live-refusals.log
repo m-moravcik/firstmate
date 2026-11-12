@@ -1,0 +1,32 @@
+Real Claude: 2.1.322 (Claude Code)
+
+Baseline: selected root has a working synthetic apiKeyHelper auth method
+{
+  "loggedIn": true,
+  "authMethod": "api_key_helper",
+  "apiProvider": "firstParty",
+  "analyticsDisabled": false,
+  "projectsDirectory": "{run-worktree}/.local-test-tmp/live/account/projects",
+  "configDirectory": "{run-worktree}/.local-test-tmp/live/account",
+  "loginExpiresAt": null,
+  "apiKeySource": "apiKeyHelper"
+}
+
+must name one with --account
+exit=1
+error: config/claude-accounts declares 1 Claude accounts, so a Claude ship or scout launch must name one with --account; bin/fm-claude-account-quota.sh measures each, and Firstmate never picks a default
+
+not declared
+exit=1
+error: account '{run-worktree}/.local-test-tmp/live/undeclared' is not declared in config/claude-accounts; name a declared entry with --account
+
+token could not be loaded
+exit=1
+error: Claude token source {run-worktree}/.local-test-tmp/live/config/claude-account-credential-source-lab.json: source macos-keychain is unavailable
+error: {run-worktree}/.local-test-tmp/live/config/claude-account-credential-source-lab.json token could not be loaded; the launch never falls back to the stored login
+
+is unavailable
+exit=3
+error: Claude token source {run-worktree}/.local-test-tmp/live/config/claude-account-credential-source-lab.json: source macos-keychain is unavailable
+
+All real-tool refusal checks passed; no worker or session was started.

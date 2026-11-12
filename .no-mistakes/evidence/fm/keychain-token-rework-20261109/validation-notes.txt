@@ -1,0 +1,36 @@
+Target: 59075849b058f88f30568718e8d0f947bcc90302
+No product or permanent test changes.
+
+Real-tool checks: bash .local-test-tmp/live-check.sh (retained as live-check.sh), exit 0.
+Real Claude 2.1.322 auth status accepted an isolated synthetic apiKeyHelper root.
+The actual account selector refused absent --account and an undeclared account.
+The actual macOS security adapter could not load the uniquely named nonexistent item.
+Selection refused despite the available helper login. The token exec helper returned 3 and never executed the fallback printf command.
+No real credential was retrieved, created, changed, or copied. No agent session was launched.
+
+Targeted regressions used existing test functions unchanged, in disposable copies beside the originals so relative fixture imports remained correct. TMPDIR was set inside this worktree. These are mock-based regressions, not live Keychain/worker evidence.
+
+Worker selectors (exit 0):
+test_claude_pin_uses_a_keychain_oauth_token
+test_claude_pin_does_not_fall_back_when_its_keychain_token_is_unavailable
+test_claude_pin_keeps_the_token_out_of_an_inherited_xtrace
+test_claude_pin_does_not_fall_back_when_its_keychain_token_vanishes_after_the_check
+test_account_list_refusals
+test_claude_account_pool_keychain_sources
+test_pool_entry_keychain_read_failure_never_falls_back
+
+Relaunch selectors (exit 0):
+test_account_list_relaunch_reuses_the_recorded_account
+test_account_list_relaunch_uses_recorded_entry_keychain_source
+test_account_list_relaunch_moves_only_on_explicit_account
+test_account_list_relaunch_refusals_happen_before_stop
+
+TMPDIR="$PWD/.local-test-tmp" bash tests/fm-claude-account-quota.test.sh: exit 0.
+
+Initial worker-account file run: exit 1, fixture setup refused because a secondmate home was inside this repository. The relevant pool/token selectors above then passed in the same workspace without secondmate cases.
+Initial whole relaunch-file run: intentionally stopped with SIGTERM (exit 143) to narrow execution to the four relevant account selectors, all of which then passed.
+git diff --check: exit 0.
+
+Successful Keychain-sourced dispatch, explicit launch, relaunch and successful-token containment remain untested live. The only adapter invokes security against the normal keychain search list; a file fixture or fake security would not be live. A separate disposable keychain alone is insufficient without changing that search list, forbidden by this run. Real operator credentials and credential-store mutations are prohibited. Supply an isolated execution environment with preprovisioned disposable Keychain items available to security, and authority to use those test items, to complete these scenarios.
+
+This is a CLI-only change; no rendered UI was changed and no screenshot was required.

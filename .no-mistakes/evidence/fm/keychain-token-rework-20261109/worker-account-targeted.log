@@ -1,0 +1,7 @@
+ok - a Claude pin uses its declared Keychain OAuth token without logging or passing the token as an argument
+ok - an unavailable mapped token refuses without falling back to the pinned Claude login
+ok - an inherited bash xtrace in the pane never prints the Keychain token
+ok - a token that vanishes after the pre-launch check stops the launch without falling back
+ok - a list refuses a missing, undeclared, signed-out, wrong-runner, raw-override, doubled, or malformed choice
+ok - dispatch-selected and explicit Claude pool entries use only their own Keychain sources
+ok - an unavailable pool-entry Keychain token refuses without falling back to the account's stored login
