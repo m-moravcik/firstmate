@@ -1,0 +1,7 @@
+Real Claude CLI: ~/.local/bin/claude
+Command: claude auth status
+Environment: disposable HOME and CLAUDE_CONFIG_DIR, synthetic USER/LOGNAME, no inherited tokens
+Exit: 1
+loggedIn: False
+Only the authentication boolean was retained; raw CLI output discarded.
+This disposable login check does not establish availability of the operator normal login. No remote mate or operator configuration was accessed.

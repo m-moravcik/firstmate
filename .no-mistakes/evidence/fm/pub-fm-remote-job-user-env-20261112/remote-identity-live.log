@@ -1,0 +1,45 @@
+CASE base-both-set: worker exit=0, result consumed and reaped
+USER=<unset>
+LOGNAME=<unset>
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+CASE target-both-set: worker exit=0, result consumed and reaped
+USER=user sample $(false)
+LOGNAME=login sample
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+CASE target-user-only: worker exit=0, result consumed and reaped
+USER=user sample $(false)
+LOGNAME=<unset>
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+CASE target-logname-only: worker exit=0, result consumed and reaped
+USER=<unset>
+LOGNAME=login sample
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+CASE target-both-unset: worker exit=0, result consumed and reaped
+USER=<unset>
+LOGNAME=<unset>
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+CASE target-both-empty: worker exit=0, result consumed and reaped
+USER=<unset>
+LOGNAME=<unset>
+ambient-secret=<unset>
+active=1
+arg=two words $(not executed)
+stdin=preserved input
+Oracle: supplied nonempty identity values survive exactly; missing/empty identities stay absent; unrelated synthetic secret stays absent; argv and stdin remain unchanged.
+Counterfactual: the base worker dropped both supplied identity values; target preserved them.
+Disposable account, queue, and executable repository removed; all synchronous lane children awaited.
