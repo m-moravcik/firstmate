@@ -941,6 +941,8 @@ worker_run_job() { # <account-home> <job-dir>
     "FM_HOME=$home"
     "FM_ROOT_OVERRIDE=$root"
     FM_REMOTE_JOB_ACTIVE=1
+    "USER=$(id -un)"
+    "LOGNAME=$(id -un)"
   )
   if [ -n "${FM_REMOTE_JOB_PLATFORM_OVERRIDE:-}" ]; then
     child_env+=("FM_REMOTE_JOB_PLATFORM_OVERRIDE=$FM_REMOTE_JOB_PLATFORM_OVERRIDE")
