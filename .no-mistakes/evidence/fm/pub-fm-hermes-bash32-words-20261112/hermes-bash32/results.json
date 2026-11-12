@@ -1,0 +1,44 @@
+[
+  {
+    "name": "baseline: idle pane on Bash 3.2",
+    "exit": 127,
+    "stdout": "",
+    "stderr": "{run-worktree}/.test-toolchain-hermes/lab/baseline/bin/fm-hermes-process-lib.sh: line 6: words[@]: unbound variable\n"
+  },
+  {
+    "name": "target: idle",
+    "exit": 0,
+    "stdout": "dead\nprobe returned normally\n",
+    "stderr": ""
+  },
+  {
+    "name": "target: python",
+    "exit": 0,
+    "stdout": "alive\nprobe returned normally\n",
+    "stderr": ""
+  },
+  {
+    "name": "target: node",
+    "exit": 0,
+    "stdout": "alive\nprobe returned normally\n",
+    "stderr": ""
+  },
+  {
+    "name": "target: decoy",
+    "exit": 0,
+    "stdout": "ambiguous\nprobe returned normally\n",
+    "stderr": ""
+  },
+  {
+    "name": "direct regression: baseline-lib.sh",
+    "exit": 127,
+    "stdout": "",
+    "stderr": "~/.no-mistakes/evidence/01M7796J4KWQENNQE6HJ8Z8ZN8/hermes-bash32/baseline-lib.sh: line 6: words[@]: unbound variable\n"
+  },
+  {
+    "name": "direct regression: fm-hermes-process-lib.sh",
+    "exit": 0,
+    "stdout": "empty status=1; shell continued\n",
+    "stderr": ""
+  }
+]

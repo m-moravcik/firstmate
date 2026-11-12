@@ -1,0 +1,399 @@
+checking for a BSD-compatible install... /usr/bin/install -c
+checking whether build environment is sane... yes
+checking for a thread-safe mkdir -p... build-aux/install-sh -c -d
+checking for gawk... no
+checking for mawk... no
+checking for nawk... no
+checking for awk... awk
+checking whether make sets $(MAKE)... yes
+checking whether make supports nested variables... yes
+checking whether make supports nested variables... (cached) yes
+checking whether make supports the include directive... yes (GNU style)
+checking for gcc... gcc
+checking whether the C compiler works... yes
+checking for C compiler default output file name... a.out
+checking for suffix of executables... 
+checking whether we are cross compiling... no
+checking for suffix of object files... o
+checking whether we are using the GNU C compiler... yes
+checking whether gcc accepts -g... yes
+checking for gcc option to accept ISO C89... none needed
+checking whether gcc understands -c and -o together... yes
+checking dependency style of gcc... gcc3
+checking how to run the C preprocessor... gcc -E
+checking for grep that handles long lines and -e... /usr/bin/grep
+checking for egrep... /usr/bin/grep -E
+checking for ANSI C header files... yes
+checking for sys/types.h... yes
+checking for sys/stat.h... yes
+checking for stdlib.h... yes
+checking for string.h... yes
+checking for memory.h... yes
+checking for strings.h... yes
+checking for inttypes.h... yes
+checking for stdint.h... yes
+checking for unistd.h... yes
+checking minix/config.h usability... no
+checking minix/config.h presence... no
+checking for minix/config.h... no
+checking whether it is safe to define __EXTENSIONS__... yes
+checking build system type... arm-apple-darwin27.0.0
+checking host system type... arm-apple-darwin27.0.0
+checking whether ln -s works... yes
+checking for a sed that does not truncate output... /usr/bin/sed
+checking whether gcc needs -traditional... no
+checking how to print strings... printf
+checking for a sed that does not truncate output... (cached) /usr/bin/sed
+checking for fgrep... /usr/bin/grep -F
+checking for ld used by gcc... /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld
+checking if the linker (/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld) is GNU ld... no
+checking for BSD- or MS-compatible name lister (nm)... /usr/bin/nm -B
+checking the name lister (/usr/bin/nm -B) interface... BSD nm
+checking the maximum length of command line arguments... 786432
+checking how to convert arm-apple-darwin27.0.0 file names to arm-apple-darwin27.0.0 format... func_convert_file_noop
+checking how to convert arm-apple-darwin27.0.0 file names to toolchain format... func_convert_file_noop
+checking for /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld option to reload object files... -r
+checking for objdump... objdump
+checking how to recognize dependent libraries... pass_all
+checking for dlltool... no
+checking how to associate runtime and link libraries... printf %s\n
+checking for ar... ar
+checking for archiver @FILE support... no
+checking for strip... strip
+checking for ranlib... ranlib
+checking command to parse /usr/bin/nm -B output from gcc object... ok
+checking for sysroot... no
+checking for a working dd... /bin/dd
+checking how to truncate binary pipes... /bin/dd bs=4096 count=1
+checking for mt... no
+checking if : is a manifest tool... no
+checking for dsymutil... dsymutil
+checking for nmedit... nmedit
+checking for lipo... lipo
+checking for otool... otool
+checking for otool64... no
+checking for -single_module linker flag... ld: warning: -single_module is obsolete
+no
+checking for -exported_symbols_list linker flag... yes
+checking for -force_load linker flag... yes
+checking for dlfcn.h... yes
+checking for objdir... .libs
+checking if gcc supports -fno-rtti -fno-exceptions... yes
+checking for gcc option to produce PIC... -fno-common -DPIC
+checking if gcc PIC flag -fno-common -DPIC works... yes
+checking if gcc static flag -static works... no
+checking if gcc supports -c -o file.o... yes
+checking if gcc supports -c -o file.o... (cached) yes
+checking whether the gcc linker (/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/ld) supports shared libraries... yes
+checking dynamic linker characteristics... darwin27.0.0 dyld
+checking how to hardcode library paths into programs... immediate
+checking whether stripping libraries is possible... yes
+checking if libtool supports shared libraries... yes
+checking whether to build shared libraries... no
+checking whether to build static libraries... yes
+checking for library containing inet_ntoa... none required
+checking for library containing socket... none required
+checking for library containing inet_aton... none required
+checking for library containing clock_gettime... none required
+checking for clock_gettime... yes
+checking for library containing sendfile... none required
+checking for WIN32... no
+checking for MIDIPIX... no
+checking for CYGWIN... no
+checking zlib.h usability... yes
+checking zlib.h presence... yes
+checking for zlib.h... yes
+checking for library containing inflateEnd... -lz
+checking for special C compiler options needed for large files... no
+checking for _FILE_OFFSET_BITS value needed for large files... no
+checking for pkg-config... no
+checking arpa/inet.h usability... yes
+checking arpa/inet.h presence... yes
+checking for arpa/inet.h... yes
+checking fcntl.h usability... yes
+checking fcntl.h presence... yes
+checking for fcntl.h... yes
+checking ifaddrs.h usability... yes
+checking ifaddrs.h presence... yes
+checking for ifaddrs.h... yes
+checking mach/mach_time.h usability... yes
+checking mach/mach_time.h presence... yes
+checking for mach/mach_time.h... yes
+checking mach/mach.h usability... yes
+checking mach/mach.h presence... yes
+checking for mach/mach.h... yes
+checking netdb.h usability... yes
+checking netdb.h presence... yes
+checking for netdb.h... yes
+checking netinet/in.h usability... yes
+checking netinet/in.h presence... yes
+checking for netinet/in.h... yes
+checking netinet/in6.h usability... no
+checking netinet/in6.h presence... no
+checking for netinet/in6.h... no
+checking netinet/tcp.h usability... yes
+checking netinet/tcp.h presence... yes
+checking for netinet/tcp.h... yes
+checking sys/un.h usability... yes
+checking sys/un.h presence... yes
+checking for sys/un.h... yes
+checking poll.h usability... yes
+checking poll.h presence... yes
+checking for poll.h... yes
+checking port.h usability... no
+checking port.h presence... no
+checking for port.h... no
+checking stdarg.h usability... yes
+checking stdarg.h presence... yes
+checking for stdarg.h... yes
+checking stddef.h usability... yes
+checking stddef.h presence... yes
+checking for stddef.h... yes
+checking sys/devpoll.h usability... no
+checking sys/devpoll.h presence... no
+checking for sys/devpoll.h... no
+checking sys/epoll.h usability... no
+checking sys/epoll.h presence... no
+checking for sys/epoll.h... no
+checking sys/event.h usability... yes
+checking sys/event.h presence... yes
+checking for sys/event.h... yes
+checking sys/eventfd.h usability... no
+checking sys/eventfd.h presence... no
+checking for sys/eventfd.h... no
+checking sys/ioctl.h usability... yes
+checking sys/ioctl.h presence... yes
+checking for sys/ioctl.h... yes
+checking sys/mman.h usability... yes
+checking sys/mman.h presence... yes
+checking for sys/mman.h... yes
+checking sys/param.h usability... yes
+checking sys/param.h presence... yes
+checking for sys/param.h... yes
+checking sys/queue.h usability... yes
+checking sys/queue.h presence... yes
+checking for sys/queue.h... yes
+checking sys/resource.h usability... yes
+checking sys/resource.h presence... yes
+checking for sys/resource.h... yes
+checking sys/select.h usability... yes
+checking sys/select.h presence... yes
+checking for sys/select.h... yes
+checking sys/sendfile.h usability... no
+checking sys/sendfile.h presence... no
+checking for sys/sendfile.h... no
+checking sys/socket.h usability... yes
+checking sys/socket.h presence... yes
+checking for sys/socket.h... yes
+checking for sys/stat.h... (cached) yes
+checking sys/time.h usability... yes
+checking sys/time.h presence... yes
+checking for sys/time.h... yes
+checking sys/timerfd.h usability... no
+checking sys/timerfd.h presence... no
+checking for sys/timerfd.h... no
+checking sys/uio.h usability... yes
+checking sys/uio.h presence... yes
+checking for sys/uio.h... yes
+checking sys/wait.h usability... yes
+checking sys/wait.h presence... yes
+checking for sys/wait.h... yes
+checking sys/random.h usability... yes
+checking sys/random.h presence... yes
+checking for sys/random.h... yes
+checking errno.h usability... yes
+checking errno.h presence... yes
+checking for errno.h... yes
+checking afunix.h usability... no
+checking afunix.h presence... no
+checking for afunix.h... no
+checking for sys/sysctl.h... yes
+checking for TAILQ_FOREACH in sys/queue.h... yes
+checking for timeradd in sys/time.h... yes
+checking for timercmp in sys/time.h... yes
+checking for timerclear in sys/time.h... yes
+checking for timerisset in sys/time.h... yes
+checking whether CTL_KERN is declared... yes
+checking whether KERN_ARND is declared... no
+checking for an ANSI C-conforming const... yes
+checking for inline... inline
+checking whether time.h and sys/time.h may both be included... yes
+checking for accept4... no
+checking for arc4random... yes
+checking for arc4random_buf... yes
+checking for arc4random_addrandom... yes
+checking for eventfd... no
+checking for epoll_create1... no
+checking for fcntl... yes
+checking for getegid... yes
+checking for geteuid... yes
+checking for getifaddrs... yes
+checking for gettimeofday... yes
+checking for issetugid... yes
+checking for mach_absolute_time... yes
+checking for mmap... yes
+checking for nanosleep... yes
+checking for pipe... yes
+checking for pipe2... yes
+checking for putenv... yes
+checking for sendfile... yes
+checking for setenv... yes
+checking for setrlimit... yes
+checking for sigaction... yes
+checking for signal... yes
+checking for splice... no
+checking for strlcpy... yes
+checking for strsep... yes
+checking for strtok_r... yes
+checking for strtoll... yes
+checking for sysctl... yes
+checking for timerfd_create... no
+checking for umask... yes
+checking for unsetenv... yes
+checking for usleep... yes
+checking for vasprintf... yes
+checking for getrandom... no
+checking for getnameinfo... yes
+checking for getprotobynumber... yes
+checking for getservbyname... yes
+checking for inet_ntop... yes
+checking for inet_pton... yes
+checking for getaddrinfo... yes
+checking for F_SETFD in fcntl.h... yes
+checking for select... yes
+checking for poll... yes
+checking for kqueue... yes
+checking for working kqueue... yes
+checking for epoll_ctl... no
+checking for port_create... no
+checking for pid_t... yes
+checking for size_t... yes
+checking for ssize_t... yes
+checking for uint64_t... yes
+checking for uint32_t... yes
+checking for uint16_t... yes
+checking for uint8_t... yes
+checking for uintptr_t... yes
+checking for fd_mask... yes
+checking size of long long... 8
+checking size of long... 8
+checking size of int... 4
+checking size of short... 2
+checking size of size_t... 8
+checking size of void *... 8
+checking size of off_t... 8
+checking size of time_t... 8
+checking for struct in6_addr... yes
+checking for struct sockaddr_in6... yes
+checking for struct sockaddr_un... yes
+checking for sa_family_t... yes
+checking for struct addrinfo... yes
+checking for struct sockaddr_storage... yes
+checking for struct in6_addr.s6_addr32... no
+checking for struct in6_addr.s6_addr16... no
+checking for struct sockaddr_in.sin_len... yes
+checking for struct sockaddr_in6.sin6_len... yes
+checking for struct sockaddr_storage.ss_family... yes
+checking for struct sockaddr_storage.__ss_family... no
+checking for struct linger... yes
+checking for socklen_t... yes
+checking whether our compiler supports __func__... yes
+checking whether our compiler supports __FUNCTION__... yes
+checking for the pthreads library -lpthreads... no
+checking whether pthreads work without any flags... yes
+checking for joinable pthread attribute... PTHREAD_CREATE_JOINABLE
+checking if more special flags are required for pthreads... -D_THREAD_SAFE
+checking size of pthread_t... 8
+checking that generated files are newer than configure... done
+configure: creating ./config.status
+config.status: creating libevent.pc
+config.status: creating libevent_openssl.pc
+config.status: creating libevent_pthreads.pc
+config.status: creating libevent_core.pc
+config.status: creating libevent_extra.pc
+config.status: creating Makefile
+config.status: creating config.h
+config.status: creating evconfig-private.h
+config.status: executing depfiles commands
+config.status: executing libtool commands
+  GEN      include/event2/event-config.h
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  all-am
+  CC       buffer.lo
+  CC       bufferevent.lo
+  CC       bufferevent_filter.lo
+  CC       bufferevent_pair.lo
+  CC       bufferevent_ratelim.lo
+  CC       bufferevent_sock.lo
+  CC       event.lo
+  CC       evmap.lo
+  CC       evthread.lo
+  CC       evutil.lo
+evthread.c:77:60: warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
+   77 | struct evthread_lock_callbacks *evthread_get_lock_callbacks()
+      |                                                            ^
+      |                                                             void
+evthread.c:82:70: warning: a function declaration without a prototype is deprecated in all versions of C [-Wstrict-prototypes]
+   82 | struct evthread_condition_callbacks *evthread_get_condition_callbacks()
+      |                                                                      ^
+      |                                                                       void
+2 warnings generated.
+  CC       evutil_rand.lo
+evutil.c:213:21: warning: argument 'fd' of type 'int[2]' with mismatched bound [-Warray-parameter]
+  213 |     evutil_socket_t fd[2])
+      |                     ^
+./util-internal.h:306:62: note: previously declared as 'int[]' here
+  306 | int evutil_ersatz_socketpair_(int, int , int, evutil_socket_t[]);
+      |                                                              ^
+  CC       evutil_time.lo
+evutil.c:2535:6: warning: initializer-string for character array is too long, array size is 16 but initializer has size 17 (including the null terminating character); did you mean to use the 'nonstring' attribute? [-Wunterminated-string-initialization]
+ 2535 |             "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\1";
+      |             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  CC       listener.lo
+2 warnings generated.
+  CC       log.lo
+  CC       select.lo
+  CC       poll.lo
+  CC       kqueue.lo
+  CC       signal.lo
+  CC       evdns.lo
+  CC       event_tagging.lo
+  CC       evrpc.lo
+  CC       http.lo
+  CCLD     libevent_core.la
+http.c:3134:18: warning: pointer comparison always evaluates to false [-Wtautological-compare]
+ 3134 |                 if (uri + slen < uri) {
+      |                                ^
+  CC       evthread_pthread.lo
+  CCLD     libevent_pthreads.la
+1 warning generated.
+  CCLD     libevent.la
+  CCLD     libevent_extra.la
+/Applications/Xcode.app/Contents/Developer/usr/bin/make  install-am
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/bin'
+ /usr/bin/install -c event_rpcgen.py '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/bin'
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib'
+ /bin/sh ./libtool   --mode=install /usr/bin/install -c   libevent.la libevent_core.la libevent_extra.la libevent_pthreads.la '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib'
+libtool: install: /usr/bin/install -c .libs/libevent.lai {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent.la
+libtool: install: /usr/bin/install -c .libs/libevent_core.lai {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_core.la
+libtool: install: /usr/bin/install -c .libs/libevent_extra.lai {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_extra.la
+libtool: install: /usr/bin/install -c .libs/libevent_pthreads.lai {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_pthreads.la
+libtool: install: /usr/bin/install -c .libs/libevent.a {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent.a
+libtool: install: chmod 644 {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent.a
+libtool: install: ranlib {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent.a
+libtool: install: /usr/bin/install -c .libs/libevent_core.a {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_core.a
+libtool: install: chmod 644 {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_core.a
+libtool: install: ranlib {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_core.a
+libtool: install: /usr/bin/install -c .libs/libevent_extra.a {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_extra.a
+libtool: install: chmod 644 {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_extra.a
+libtool: install: ranlib {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_extra.a
+libtool: install: /usr/bin/install -c .libs/libevent_pthreads.a {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_pthreads.a
+libtool: install: chmod 644 {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_pthreads.a
+libtool: install: ranlib {run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/libevent_pthreads.a
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include'
+ /usr/bin/install -c -m 644 include/evdns.h include/event.h include/evhttp.h include/evrpc.h include/evutil.h '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include'
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include/event2'
+ /usr/bin/install -c -m 644 include/event2/buffer.h include/event2/buffer_compat.h include/event2/bufferevent.h include/event2/bufferevent_compat.h include/event2/bufferevent_struct.h include/event2/dns.h include/event2/dns_compat.h include/event2/dns_struct.h include/event2/event.h include/event2/event_compat.h include/event2/event_struct.h include/event2/http.h include/event2/http_compat.h include/event2/http_struct.h include/event2/keyvalq_struct.h include/event2/listener.h include/event2/rpc.h include/event2/rpc_compat.h include/event2/rpc_struct.h include/event2/tag.h include/event2/tag_compat.h include/event2/thread.h include/event2/util.h include/event2/visibility.h '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include/event2'
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include/event2'
+ /usr/bin/install -c -m 644 include/event2/event-config.h '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/include/event2'
+ build-aux/install-sh -c -d '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/pkgconfig'
+ /usr/bin/install -c -m 644 libevent.pc libevent_core.pc libevent_extra.pc libevent_pthreads.pc '{run-worktree}/.test-toolchain-hermes/libevent-2.1.12-stable/../installed/lib/pkgconfig'

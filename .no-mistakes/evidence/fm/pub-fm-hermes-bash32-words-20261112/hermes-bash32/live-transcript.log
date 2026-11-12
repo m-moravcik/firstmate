@@ -1,0 +1,21 @@
+GNU bash, version 3.2.57(1)-release (arm64-apple-darwin26)
+tmux 3.5a
+idle 120x30 bash 69736
+idle OS argv: /bin/sh -i
+python 120x30 python3 69738
+python OS argv: {run-worktree}/.test-toolchain-hermes/lab/python3 -m tui_gateway.entry
+node 120x30 node 69741
+node OS argv: /opt/homebrew/bin/node {run-worktree}/.test-toolchain-hermes/lab/ui-tui/dist/entry.js
+decoy 120x30 node 69755
+decoy OS argv: /opt/homebrew/bin/node -e console.log("decoy ready"); setInterval(()=>{},1000) {run-worktree}/.test-toolchain-hermes/lab/ui-tui/dist/entry.js
+{"name": "baseline: idle pane on Bash 3.2", "exit": 127, "stdout": "", "stderr": "{run-worktree}/.test-toolchain-hermes/lab/baseline/bin/fm-hermes-process-lib.sh: line 6: words[@]: unbound variable\n"}
+{"name": "target: idle", "exit": 0, "stdout": "dead\nprobe returned normally\n", "stderr": ""}
+{"name": "target: python", "exit": 0, "stdout": "alive\nprobe returned normally\n", "stderr": ""}
+{"name": "target: node", "exit": 0, "stdout": "alive\nprobe returned normally\n", "stderr": ""}
+{"name": "target: decoy", "exit": 0, "stdout": "ambiguous\nprobe returned normally\n", "stderr": ""}
+{"name": "direct regression: baseline-lib.sh", "exit": 127, "stdout": "", "stderr": "~/.no-mistakes/evidence/01M7796J4KWQENNQE6HJ8Z8ZN8/hermes-bash32/baseline-lib.sh: line 6: words[@]: unbound variable\n"}
+{"name": "direct regression: fm-hermes-process-lib.sh", "exit": 0, "stdout": "empty status=1; shell continued\n", "stderr": ""}
+All three live scenarios passed. Real Node and synthetic Python-shaped native argv; no real Hermes CLI or login used.
+private tmux kill-server exit 0
+private tmux list-sessions after cleanup exit 1
+all pane process PIDs are gone
