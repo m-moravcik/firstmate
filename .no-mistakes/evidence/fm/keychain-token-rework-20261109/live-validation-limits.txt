@@ -1,0 +1,17 @@
+Host: Darwin
+security: /usr/bin/security
+claude: ~/.local/bin/claude
+tmux: not on PATH
+quota-axi: /opt/homebrew/bin/quota-axi
+No real tokens, login Keychain items, operator configuration, or user Keychain search list were read or changed.
+The workspace boundary forbids changes to system state outside the worktree. The requested live setup requires appending a temporary Keychain to the user search list, which is outside this boundary.
+The actual macos-keychain adapter supports service and account only and invokes security without a Keychain path. There is no supported workspace-local search-list override. Replacing security with a fixture would not prove the requested live Keychain paths.
+No temporary Keychain was created: its registration/search-list side effects would require the prohibited system mutation, so cleanup could not authorize creation.
+Four scenarios remain untested: dispatch quota selection and token delivery; explicit second-account token delivery; recorded-account relaunch and token delivery; token containment under xtrace and failed second read.
+A rerun needs an explicit exception permitting the temporary user search-list change and exact restoration, or a disposable macOS user/environment where those settings are inside the authorized boundary. A real worker session also needs tmux or a guarded Herdr lab. Synthetic dummy tokens cannot establish real remote account quota; ranking needs an explicitly identified synthetic quota boundary or disposable test subscription.
+Automated regression logs use fake external tools and are supplemental, not live Keychain evidence.
+Live refusal evidence: live-refusal-transcript.log. Public token helper rejected malformed JSON and inline token fields before the target executed. Actual account selector rejected missing/undeclared --account and mixed pin/pool configuration. All synthetic input directories were removed.
+No GUI surface was changed or driven; CLI transcript is the reviewer-visible product evidence.
+
+Completed checks: fm-worker-account.test.sh exit 0; fm-claude-account-quota.test.sh exit 0; three focused pool relaunch regressions exit 0; live refusal driver exit 0.
+Final worktree status: clean

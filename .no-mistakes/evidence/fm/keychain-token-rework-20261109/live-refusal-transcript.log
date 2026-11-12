@@ -1,0 +1,27 @@
+Malformed declaration refuses before starting the target
+exit=3
+
+error: Claude token source {run-worktree}/.token-live-rrxitmh2/config/claude-account-credential-source.json: malformed declaration: not JSON
+
+Inline credential value refuses before starting the target
+exit=3
+
+error: Claude token source {run-worktree}/.token-live-rrxitmh2/config/claude-account-credential-source.json: malformed declaration: claude has unknown field token (allowed: source, service, account); credential values do not belong in this file
+
+Target marker absent after both refusals. No Keychain calls or credential reads needed.
+Pool refuses omitted --account
+exit=1
+
+error: config/claude-accounts declares 2 Claude accounts, so a Claude ship or scout launch must name one with --account; bin/fm-claude-account-quota.sh measures each, and Firstmate never picks a default
+
+Pool refuses undeclared --account
+exit=1
+
+error: account '{run-worktree}/.token-live-rrxitmh2/third' is not declared in config/claude-accounts; name a declared entry with --account
+
+Pool refuses a simultaneous single pin
+exit=1
+
+error: config/claude-accounts and config/claude-account are both present; keep the account list or the single pin, not both
+
+All policy refusals occurred before sign-in checks, without a harness or credential fixture.

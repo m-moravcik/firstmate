@@ -1,0 +1,36 @@
+{
+  "prepared_keychain_exists": true,
+  "real_security_search_list_exit": 152,
+  "real_security_explicit_prepared_keychain_exit": 152,
+  "tmux_on_PATH": false,
+  "checks": [
+    {
+      "check": "Real Keychain delivery for first",
+      "exit": 3,
+      "target_started": false,
+      "stdout": "",
+      "stderr": "error: Claude token source {run-worktree}/.live-keychain-check-shcauiw6/config/claude-account-credential-source-first.json: source macos-keychain is unavailable\n"
+    },
+    {
+      "check": "Real Keychain delivery for second",
+      "exit": 3,
+      "target_started": false,
+      "stdout": "",
+      "stderr": "error: Claude token source {run-worktree}/.live-keychain-check-shcauiw6/config/claude-account-credential-source-second.json: source macos-keychain is unavailable\n"
+    },
+    {
+      "check": "Real quota reading for isolated pool roots",
+      "exit": 0,
+      "stdout": "claude-account-quota:\n  row: {run-worktree}/.live-keychain-check-shcauiw6/first  root={run-worktree}/.live-keychain-check-shcauiw6/first  uncertainty: quota unknown (unavailable: Claude profile credentials missing)\n  row: {run-worktree}/.live-keychain-check-shcauiw6/first  root={run-worktree}/.live-keychain-check-shcauiw6/first  uncertainty: no applicable quota scope\n  row: {run-worktree}/.live-keychain-check-shcauiw6/second  root={run-worktree}/.live-keychain-check-shcauiw6/second  uncertainty: quota unknown (unavailable: Claude profile credentials missing)\n  row: {run-worktree}/.live-keychain-check-shcauiw6/second  root={run-worktree}/.live-keychain-check-shcauiw6/second  uncertainty: no applicable quota scope\n",
+      "stderr": ""
+    }
+  ],
+  "verdict": "inconclusive",
+  "untested_scenarios": [
+    "Dispatch selects a pool entry from quota and its worker receives only that entry's Keychain token",
+    "Explicit --account selects the second pool entry and delivers its distinct Keychain token",
+    "Relaunch preserves the recorded pool entry and its Keychain source",
+    "Token stays absent from argv, logs and xtrace, and a failed second read prevents Claude from starting"
+  ],
+  "reason": "Prepared Keychain items are unreadable: real /usr/bin/security exits 152 without output both through the normal search list and with the explicitly prepared keychain. No keychain, item, search-list, or credential changes were made. No product failure established."
+}

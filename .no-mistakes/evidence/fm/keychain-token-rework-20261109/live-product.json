@@ -1,0 +1,172 @@
+[
+  {
+    "check": "Create disposable marked lab home",
+    "argv": [
+      "bash",
+      "bin/fm-lab-home.sh",
+      "create",
+      "{run-worktree}/.live-validation/lab"
+    ],
+    "exit": 0,
+    "stdout": "{run-worktree}/.live-validation/lab\n",
+    "stderr": ""
+  },
+  {
+    "check": "Prepared synthetic item availability",
+    "account": "first",
+    "explicit_keychain": false,
+    "exit": 152,
+    "nonempty": false,
+    "stderr": ""
+  },
+  {
+    "check": "Prepared synthetic item availability",
+    "account": "first",
+    "explicit_keychain": true,
+    "exit": 152,
+    "nonempty": false,
+    "stderr": ""
+  },
+  {
+    "check": "Prepared synthetic item availability",
+    "account": "second",
+    "explicit_keychain": false,
+    "exit": 152,
+    "nonempty": false,
+    "stderr": ""
+  },
+  {
+    "check": "Prepared synthetic item availability",
+    "account": "second",
+    "explicit_keychain": true,
+    "exit": 152,
+    "nonempty": false,
+    "stderr": ""
+  },
+  {
+    "check": "unbound-source",
+    "argv": [
+      "bash",
+      "bin/fm-spawn.sh",
+      "unbound-source",
+      "{run-worktree}",
+      "--mode",
+      "no-mistakes",
+      "--yolo",
+      "off",
+      "--harness",
+      "claude",
+      "--backend",
+      "tmux"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-validation/lab\nerror: {run-worktree}/.live-validation/lab/config/claude-account-credential-source.json requires a Claude account pin: {run-worktree}/.live-validation/lab/config/claude-account\n",
+    "task_record_exists": false
+  },
+  {
+    "check": "malformed-source",
+    "argv": [
+      "bash",
+      "bin/fm-spawn.sh",
+      "malformed-source",
+      "{run-worktree}",
+      "--mode",
+      "no-mistakes",
+      "--yolo",
+      "off",
+      "--harness",
+      "claude",
+      "--backend",
+      "tmux"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-validation/lab\nerror: malformed {run-worktree}/.live-validation/lab/config/claude-account-credential-source.json - claude has unknown field unexpected (allowed: source, service, account); credential values do not belong in this file\n",
+    "task_record_exists": false
+  },
+  {
+    "check": "unavailable-source",
+    "argv": [
+      "bash",
+      "bin/fm-spawn.sh",
+      "unavailable-source",
+      "{run-worktree}",
+      "--mode",
+      "no-mistakes",
+      "--yolo",
+      "off",
+      "--harness",
+      "claude",
+      "--backend",
+      "tmux"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-validation/lab\nerror: Claude token source {run-worktree}/.live-validation/lab/config/claude-account-credential-source.json: source macos-keychain is unavailable\nerror: {run-worktree}/.live-validation/lab/config/claude-account-credential-source.json token could not be loaded; the launch never falls back to the stored login\n",
+    "task_record_exists": false
+  },
+  {
+    "check": "Real quota reading for two empty isolated roots",
+    "argv": [
+      "bash",
+      "bin/fm-claude-account-quota.sh"
+    ],
+    "exit": 0,
+    "stdout": "claude-account-quota:\n  row: {run-worktree}/.live-validation/first  root={run-worktree}/.live-validation/first  uncertainty: quota unknown (unavailable: Claude profile credentials missing)\n  row: {run-worktree}/.live-validation/first  root={run-worktree}/.live-validation/first  uncertainty: no applicable quota scope\n  row: {run-worktree}/.live-validation/second  root={run-worktree}/.live-validation/second  uncertainty: quota unknown (unavailable: Claude profile credentials missing)\n  row: {run-worktree}/.live-validation/second  root={run-worktree}/.live-validation/second  uncertainty: no applicable quota scope\n",
+    "stderr": ""
+  },
+  {
+    "check": "explicit-second",
+    "argv": [
+      "bash",
+      "bin/fm-spawn.sh",
+      "explicit-second",
+      "{run-worktree}",
+      "--mode",
+      "no-mistakes",
+      "--yolo",
+      "off",
+      "--harness",
+      "claude",
+      "--backend",
+      "tmux",
+      "--account",
+      "{run-worktree}/.live-validation/second"
+    ],
+    "exit": 1,
+    "stdout": "",
+    "stderr": "fm-gate-refuse: gate agent lifecycle permitted only against lab home {run-worktree}/.live-validation/lab\nerror: Claude token source {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json: source macos-keychain is unavailable\nerror: {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json token could not be loaded; the launch never falls back to the stored login\n",
+    "task_record_exists": false
+  },
+  {
+    "check": "Traced real helper with unreadable prepared source",
+    "argv": [
+      "bash",
+      "bin/fm-claude-token.sh",
+      "exec",
+      "{run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json",
+      "--",
+      "claude",
+      "auth",
+      "status"
+    ],
+    "exit": 3,
+    "stdout": "",
+    "stderr": "+ set -u\n+++ dirname bin/fm-claude-token.sh\n++ cd bin\n++ pwd\n+ SCRIPT_DIR={run-worktree}/bin\n+ . {run-worktree}/bin/fm-credential-source-lib.sh\n++++ dirname {run-worktree}/bin/fm-credential-source-lib.sh\n+++ cd {run-worktree}/bin\n+++ pwd\n++ . {run-worktree}/bin/fm-timeout-lib.sh\n+++ set -u\n++ FM_CREDSRC_SCHEMA='{\"macos-keychain\":{\"required\":[\"service\"],\"optional\":[\"account\"]}}'\n++ FM_CREDSRC_TIMEOUT=5\n+ '[' exec = exec ']'\n+ '[' 6 -ge 4 ']'\n+ shift\n+ SOURCE_FILE={run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json\n+ shift\n+ '[' -- = -- ']'\n+ shift\n+ '[' 3 -gt 0 ']'\n+ case \"$1\" in\n++ fm_credsrc_check {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json claude\n++ local file={run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json providers problem\n++ shift\n+++ printf '%s\\n' claude\n+++ jq -Rsc 'split(\"\\n\") | map(select(length > 0))'\n++ providers='[\"claude\"]'\n+++ jq -rs --argjson schema '{\"macos-keychain\":{\"required\":[\"service\"],\"optional\":[\"account\"]}}' --argjson providers '[\"claude\"]' '\n    def flat: explode | map(if . < 32 or . == 127 then 63 else . end) | implode;\n    def plain: type == \"string\" and length > 0 and (explode | all(. >= 32 and . != 127));\n    def entry($name; $d):\n      if ($d | type) != \"object\" then \"\\($name) must be an object with a source\"\n      elif ($d | has(\"source\") | not) then \"\\($name) needs a source\"\n      elif ($d.source | type) != \"string\" or ($schema | has($d.source) | not) then\n        \"\\($name) source must be one of \\($schema | keys | join(\", \"))\"\n      else\n        $schema[$d.source] as $f\n        | ([\"source\"] + $f.required + $f.optional) as $allowed\n        | ([$d | keys_unsorted[] | select(. as $k | $allowed | index($k) | not)]) as $extra\n        | ([$f.required[] | . as $k | select(($d[$k] | plain) | not)]) as $bad_required\n        | ([$f.optional[] | . as $k | select($d | has($k)) | select(($d[$k] | plain) | not)]) as $bad_optional\n        | if ($extra | length) > 0 then\n            \"\\($name) has unknown field \\($extra[0] | flat) (allowed: \\($allowed | join(\", \"))); credential values do not belong in this file\"\n          elif ($bad_required | length) > 0 then\n            \"\\($name) \\($bad_required[0]) must be a non-empty string without control characters\"\n          elif ($bad_optional | length) > 0 then\n            \"\\($name) \\($bad_optional[0]) must be a non-empty string without control characters when present\"\n          else empty end\n      end;\n    if length != 1 then \"must hold exactly one JSON object\"\n    elif (.[0] | type) != \"object\" then \"top-level value must be an object keyed by provider\"\n    else\n      .[0] as $doc\n      | ([$doc | keys_unsorted[] | select(. as $k | $providers | index($k) | not)]) as $unknown\n      | if ($unknown | length) > 0 then\n          \"unknown provider \\($unknown[0] | flat) (expected \\($providers | join(\" or \")))\"\n        else first(($doc | to_entries[] | entry(.key; .value)), empty)\n        end\n    end' {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json\n++ problem=\n++ '[' -z '' ']'\n++ return 0\n+ problem=\n++ fm_credsrc_field {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json claude source\n++ jq -r --arg p claude --arg f source '.[$p][$f] // empty' {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json\n+ source=macos-keychain\n+ fm_credsrc_supported macos-keychain\n+ case \"${1:-}\" in\n++ uname -s\n+ '[' Darwin = Darwin ']'\n+ command -v security\n+ case $- in\n+ xtrace=1\n+ set +x\nerror: Claude token source {run-worktree}/.live-validation/lab/config/claude-account-credential-source-second.json: source macos-keychain is unavailable\n"
+  },
+  {
+    "check": "Isolation postcondition",
+    "task_records": 0,
+    "runtime_started": false,
+    "keychain_mutations": 0,
+    "note": "No successful first read was possible; worker delivery, relaunch and second-read transition remain unproven."
+  },
+  {
+    "check": "Read-only Keychain check with a real PTY",
+    "command": "security find-generic-password -s fm-livetest-8327 -a <first|second> -w >/dev/null",
+    "first_exit": 152,
+    "second_exit": 152,
+    "credential_mutations": 0
+  }
+]
