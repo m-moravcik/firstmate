@@ -160,8 +160,6 @@ if [ "$COMMAND" = fm-remote-doctor.sh ]; then
     "FM_HOME=$HOME_PATH"
     "FM_ROOT_OVERRIDE=$ROOT"
     FM_REMOTE_DOCTOR_BOOTSTRAP=1
-    "USER=$(id -un)"
-    "LOGNAME=$(id -un)"
   )
   if [ -n "${FM_REMOTE_JOB_PLATFORM_OVERRIDE:-}" ]; then
     DOCTOR_ENV+=("FM_REMOTE_JOB_PLATFORM_OVERRIDE=$FM_REMOTE_JOB_PLATFORM_OVERRIDE")
