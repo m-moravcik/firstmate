@@ -568,8 +568,10 @@ write_replacement_children() {
 assert_child_report() { # <child> <expected line after the key> <failure>
   local key
   key=$(reported_outcome_key "$MATE" "$1" 'done') || fail "$1 receipt key missing"
-  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.status" | grep -Fxq "done [key=$key]: $2" \
-    || fail "$3: $(cat "$MAIN/state/mate.status")"
+  sed -E 's/ \[at=[0-9]+\]//' "$MAIN/state/mate.digest" | grep -Fxq "done [key=$key]: $2" \
+    || fail "$3: $(cat "$MAIN/state/mate.digest")"
+  ! grep -Fq "[key=$key]" "$MAIN/state/mate.status" 2>/dev/null \
+    || fail "$3: the routine child report woke the parent"
 }
 
 # With config/pr-register-scan, the child's report names the PR its newest
