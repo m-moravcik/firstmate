@@ -1,7 +1,9 @@
 ---
 name: quota-array-dispatch
 description: >-
-  Load when a crew-dispatch rule or default resolves to more than one profile candidate, or a Claude ship or scout is dispatched from a home that declares config/claude-accounts.
+  Load when a crew-dispatch rule or default resolves to more than one profile candidate,
+  before any Claude spawn in a home whose config/claude-account declares more than one account,
+  or when a Claude ship or scout is dispatched from a home that declares config/claude-accounts.
 user-invocable: false
 metadata:
   internal: true
@@ -40,6 +42,15 @@ It does not replace the reasoning-class, runway-feasibility, or authentication g
 Firstmate can optionally arm `bin/fm-procevent-quota.sh` for a recurring mid-task check that wakes when the tracked provider drops below its configured threshold or its runway becomes `exhausted_now`.
 The opt-in [typed resolver](../../../docs/configuration.md#typed-dispatch-resolution-env-fm_dispatch_provider-fm_dispatch_model) has its own documented gates.
 It never removes this skill's authority, and its `ambiguous`, `escalate`, and `error` outcomes return here.
+
+## Claude account pool
+
+A home whose `config/claude-account` declares more than one line is a Claude account pool ([`docs/configuration.md`](../../../docs/configuration.md#claude-account-pool)).
+After the harness and model decision lands on `claude` for any ship, scout, or local secondmate spawn in such a home, run `bin/fm-claude-account.sh pick --model <model>` once and pass its final `account:` line to `bin/fm-spawn.sh --account`.
+A relaunch stays on the task's recorded account; when that account is exhausted, a fresh pick's `account:` passed to `bin/fm-control.sh relaunch --account` is the deliberate switch.
+Report its `lane:` and `basis:` lines with the other candidate accounting, including an unmeasured default it discloses.
+Its exhausted exit means no declared account can take the work: stop and report it rather than spawning, and never edit the file to make room.
+The helper's header owns lane matching, ranking, and exit codes.
 
 ## Claude account list
 

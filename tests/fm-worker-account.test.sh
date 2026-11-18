@@ -6,10 +6,14 @@
 # records the launch command, then runs that command in a synthetic pane whose
 # ambient environment carries a different account. The fake claude and pi
 # answer the sign-in checks the way the real runners do - an environment
-# credential counts as signed in, otherwise the selected root's stored login
-# decides - and record the account environment and arguments a launched worker
-# receives. tests/fm-worker-account-live-e2e.test.sh proves those answers
-# against the real runners.
+# credential counts as signed in (claude reports it as authMethod
+# oauth_token), otherwise the selected root's stored login decides - and
+# record the account environment and arguments a launched worker receives,
+# plus a process snapshot. A fake security (tests/lib.sh fm_fake_security)
+# holds the fake tokens the Claude token source cases map onto pool accounts.
+# tests/fm-worker-account-live-e2e.test.sh and
+# tests/fm-claude-token-live-e2e.test.sh prove those answers against the real
+# runners and the real Keychain tool.
 set -u
 
 # shellcheck source=tests/fixtures.sh
@@ -27,30 +31,36 @@ make_account_fakes() {
 #!/usr/bin/env bash
 if [ "\${1:-}" = auth ] && [ "\${2:-}" = status ]; then
   printf '%s\n' "\${CLAUDE_CONFIG_DIR-unset}" >> '$dir/claude-checks'
-  if [ -n "\${CLAUDE_CODE_OAUTH_TOKEN:-}" ]; then
-    printf '%s\n' '{"loggedIn":true,"authMethod":"oauth_token"}'
+  printf '%s\n' "\${CLAUDE_CODE_OAUTH_TOKEN:+token-present}" >> '$dir/claude-check-tokens'
+  root=\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}
+  if [ -n "\${CLAUDE_CODE_OAUTH_TOKEN:-}" ] && [ ! -f "\$root/ignores-token" ]; then
+    printf '{"loggedIn":true,"authMethod":"oauth_token","apiProvider":"firstParty"}\n'
     exit 0
   fi
-  [ -z "\${ANTHROPIC_API_KEY:-}" ] || exit 0
-  if [ -f "\${CLAUDE_CONFIG_DIR:-\$HOME/.claude}/.credentials.json" ]; then
-    printf '%s\n' '{"loggedIn":true,"authMethod":"oauth_session"}'
+  if [ -n "\${ANTHROPIC_API_KEY:-}" ]; then
+    printf '{"loggedIn":true,"authMethod":"api_key","apiProvider":"firstParty"}\n'
     exit 0
   fi
-  printf '%s\n' '{"loggedIn":false}'
+  if [ -f "\$root/.credentials.json" ]; then
+    printf '{"loggedIn":true,"authMethod":"claude.ai","apiProvider":"firstParty"}\n'
+    exit 0
+  fi
+  printf '{"loggedIn":false,"authMethod":"none","apiProvider":"firstParty"}\n'
   exit 1
 fi
 {
   printf 'CLAUDE_CONFIG_DIR=%s\n' "\${CLAUDE_CONFIG_DIR-unset}"
   printf 'ANTHROPIC_API_KEY=%s\n' "\${ANTHROPIC_API_KEY-unset}"
-  case "\${CLAUDE_CODE_OAUTH_TOKEN:-}" in
+  printf 'ANTHROPIC_AUTH_TOKEN=%s\n' "\${ANTHROPIC_AUTH_TOKEN-unset}"
+  case "\${CLAUDE_CODE_OAUTH_TOKEN-unset}" in
     fm-synthetic-oauth-token) printf 'CLAUDE_CODE_OAUTH_TOKEN=expected\n' ;;
     fm-synthetic-first-token) printf 'CLAUDE_CODE_OAUTH_TOKEN=first-item\n' ;;
     fm-synthetic-second-token) printf 'CLAUDE_CODE_OAUTH_TOKEN=second-item\n' ;;
-    '') printf 'CLAUDE_CODE_OAUTH_TOKEN=unset\n' ;;
-    *) printf 'CLAUDE_CODE_OAUTH_TOKEN=unexpected\n' ;;
+    *) printf 'CLAUDE_CODE_OAUTH_TOKEN=%s\n' "\${CLAUDE_CODE_OAUTH_TOKEN-unset}" ;;
   esac
   printf 'CLAUDE_CODE_USE_BEDROCK=%s\n' "\${CLAUDE_CODE_USE_BEDROCK-unset}"
 } > '$dir/claude-worker'
+ps -axww -o args= > '$dir/ps-snapshot' 2>/dev/null || true
 SH
   cat > "$fakebin/pi" <<SH
 #!/usr/bin/env bash
@@ -151,7 +161,7 @@ spawn_ship() {
 pane() {
   env -i HOME="$HOME_DIR/user-home" PATH="$FAKEBIN:$PATH" TERM=xterm \
     CLAUDE_CONFIG_DIR="$CASE/ambient-claude" ANTHROPIC_API_KEY=ambient-pane-key \
-    CLAUDE_CODE_OAUTH_TOKEN=ambient-pane-token CLAUDE_CODE_USE_BEDROCK=1 \
+    CLAUDE_CODE_OAUTH_TOKEN=ambient-pane-token ANTHROPIC_AUTH_TOKEN=ambient-pane-auth CLAUDE_CODE_USE_BEDROCK=1 \
     PI_CODING_AGENT_DIR="$CASE/ambient-pi" OPENAI_API_KEY=ambient-pane-openai \
     "$@" bash -c "$(cat "$CASE/launch.log")"
 }
@@ -274,6 +284,79 @@ test_malformed_pins_refuse_before_launch() {
   assert_refused_before_launch "$id-pi" "$out" "config/pi-account must hold"
   assert_absent "$CASE/claude-checks" "a malformed pin must refuse before any sign-in check"
   pass "malformed, relative, CR-terminated, empty, extra-line, missing-root, and non-file pins refuse before launch"
+}
+
+test_claude_pool_defaults_to_the_first_line_and_account_selects_another() {
+  local out rc id=acct-pool
+  new_case pool claude
+  signed_in_claude_root "$CASE/work"
+  signed_in_claude_root "$CASE/mon"
+  signed_in_claude_root "$HOME_DIR/user-home/.claude"
+  printf '%s\n' "$CASE/work" "$CASE/mon" ordinary > "$HOME_DIR/config/claude-account"
+  out=$(spawn_ship "$id-first"); rc=$?
+  expect_code 0 "$rc" "a pool spawn without --account should launch on the first line: $out"
+  assert_contains "$out" "account=$CASE/work" "the spawn should report the pool's first line"
+  assert_grep "account=$CASE/work" "$HOME_DIR/state/$id-first.meta" "the task record should carry the first line"
+  [ "$(cat "$CASE/claude-checks")" = "$CASE/work" ] \
+    || fail "only the selected account should be sign-in checked: $(cat "$CASE/claude-checks")"
+  : > "$CASE/claude-checks"
+  out=$(spawn_ship "$id-mon" --account "$CASE/mon"); rc=$?
+  expect_code 0 "$rc" "--account naming a declared line should launch on it: $out"
+  assert_contains "$out" "account=$CASE/mon" "the spawn should report the selected account"
+  assert_grep "account=$CASE/mon" "$HOME_DIR/state/$id-mon.meta" "the task record should carry the selected account"
+  [ "$(cat "$CASE/claude-checks")" = "$CASE/mon" ] \
+    || fail "the sign-in check should ask about the selected account only: $(cat "$CASE/claude-checks")"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/mon" "$CASE/claude-worker" "the worker should run under the selected account"
+  assert_grep "ANTHROPIC_API_KEY=unset" "$CASE/claude-worker" "a selected pool account must still shed ambient credentials"
+  out=$(spawn_ship "$id-ord" --account=ordinary); rc=$?
+  expect_code 0 "$rc" "--account ordinary should launch on the default login: $out"
+  assert_contains "$out" "account=ordinary" "the spawn should report the ordinary account"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=unset" "$CASE/claude-worker" "the ordinary pool line must drop an ambient root"
+  pass "a Claude pool launches on its first line by default and on any declared line named by --account"
+}
+
+test_claude_pool_and_account_refusals() {
+  local out rc id=acct-pool-bad n=0 body
+  new_case pool-refusals claude
+  signed_in_claude_root "$CASE/work"
+  mkdir -p "$CASE/mon"
+  out=$(spawn_ship "$id-nofile" --account ordinary); rc=$?
+  expect_code 1 "$rc" "--account without config/claude-account must refuse"
+  assert_refused_before_launch "$id-nofile" "$out" "--account 'ordinary' needs config/claude-account"
+  printf '%s\n' "$CASE/work" "$CASE/mon" > "$HOME_DIR/config/claude-account"
+  out=$(spawn_ship "$id-undeclared" --account "$CASE/other"); rc=$?
+  expect_code 1 "$rc" "an undeclared --account must refuse"
+  assert_refused_before_launch "$id-undeclared" "$out" "--account '$CASE/other' is not declared in config/claude-account"
+  out=$(spawn_ship "$id-prefix" --account "$CASE/wor"); rc=$?
+  expect_code 1 "$rc" "--account must match a declared line exactly"
+  assert_refused_before_launch "$id-prefix" "$out" "is not declared in config/claude-account"
+  out=$(spawn_ship "$id-out" --account "$CASE/mon"); rc=$?
+  expect_code 1 "$rc" "a signed-out selected account must refuse even when the first line is signed in"
+  assert_refused_before_launch "$id-out" "$out" "config/claude-account pins Claude workers to $CASE/mon, which is not signed in"
+  out=$(spawn_ship "$id-codex" --harness codex --account "$CASE/work"); rc=$?
+  expect_code 1 "$rc" "--account for another harness must refuse"
+  assert_refused_before_launch "$id-codex" "$out" "applies to Claude workers only, not codex"
+  out=$(spawn_ship "$id-pi" --harness pi --model openai-codex/gpt-5.5 --account "$CASE/work"); rc=$?
+  expect_code 1 "$rc" "--account for Pi must refuse"
+  assert_refused_before_launch "$id-pi" "$out" "applies to Claude workers only, not pi"
+  out=$(spawn_ship "$id-empty" --account ''); rc=$?
+  expect_code 1 "$rc" "an empty --account must refuse"
+  assert_refused_before_launch "$id-empty" "$out" "--account requires a non-empty value"
+  for body in "$CASE/work"$'\n'"$CASE/work" "$CASE/work"$'\n\n'"$CASE/mon" \
+    "$CASE/work"$'\n''relative/root' "$CASE/work"$'\n'"$CASE/mon"$'\r' "$CASE/work"$'\n'"$CASE/missing"; do
+    n=$((n + 1))
+    printf '%s' "$body" > "$HOME_DIR/config/claude-account"
+    out=$(spawn_ship "$id-malformed-$n"); rc=$?
+    expect_code 1 "$rc" "malformed pool #$n must refuse"
+    assert_refused_before_launch "$id-malformed-$n" "$out" "config/claude-account"
+  done
+  assert_contains "$out" "-> $CASE/missing" "a pool with an unusable later root should name that root"
+  printf '%s\n' "$CASE/work" "$CASE/work" > "$HOME_DIR/config/claude-account"
+  out=$(spawn_ship "$id-dup"); rc=$?
+  assert_refused_before_launch "$id-dup" "$out" "must hold one account per line - 'ordinary' or an absolute path - each distinct"
+  pass "a pool refuses --account outside Claude, without a file, undeclared, signed out, or empty, and refuses malformed pools"
 }
 
 test_pi_pin_selects_the_root_and_the_declared_provider() {
@@ -528,6 +611,326 @@ test_remote_secondmate_account_override_refuses_locally() {
   assert_refused_before_launch "$id" "$out" "$HOME_DIR/config/secondmate-accounts/$id/claude-account cannot pin remote secondmate"
   assert_absent "$CASE/claude-checks" "a remote refusal must not inspect a local login"
   pass "a remote route refuses a primary-side account override instead of silently ignoring it"
+}
+
+# The liveness sweep respawns a local secondmate whose endpoint is dead with a
+# bare `fm-spawn.sh <id> --secondmate`, so each respawn below first ends the
+# fake window. That respawn keeps the pool account recorded
+# on the task while the file declares it, and re-resolves once it does not.
+test_local_secondmate_respawn_keeps_the_recorded_pool_account() {
+  local out rc id=acct-sm-pool sm
+  new_case secondmate-pool claude
+  signed_in_claude_root "$CASE/work"
+  signed_in_claude_root "$CASE/mon"
+  printf '%s\n' "$CASE/work" "$CASE/mon" > "$HOME_DIR/config/claude-account"
+  sm="$CASE/secondmate-home"
+  mkdir -p "$sm/bin" "$sm/data" "$sm/config"
+  git init -q -b main "$sm"
+  printf '# Firstmate\n' > "$sm/AGENTS.md"
+  printf '%s\n' "$id" > "$sm/.fm-secondmate-home"
+  printf 'charter for %s\n' "$id" > "$sm/data/charter.md"
+  signed_in_claude_root "$CASE/ambient-claude"
+  out=$(FM_FAKE_LAUNCH_LOG="$CASE/launch.log" FM_TEST_CLAUDE_CONFIG_DIR="$CASE/ambient-claude" \
+    fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" "$sm" --account "$CASE/mon" --secondmate); rc=$?
+  expect_code 0 "$rc" "a local secondmate spawn on the pool's second line should succeed: $out"
+  assert_grep "account=$CASE/mon" "$HOME_DIR/state/$id.meta" "the secondmate record should carry the selected account"
+
+  "$FAKEBIN/tmux" kill-window -t "firstmate:fm-$id"
+  : > "$CASE/launch.log"
+  out=$(FM_FAKE_LAUNCH_LOG="$CASE/launch.log" FM_TEST_CLAUDE_CONFIG_DIR="$CASE/ambient-claude" \
+    fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" --secondmate); rc=$?
+  expect_code 0 "$rc" "a respawn of the local secondmate should succeed: $out"
+  assert_contains "$out" "account=$CASE/mon" "the respawn should report the recorded account"
+  assert_grep "account=$CASE/mon" "$HOME_DIR/state/$id.meta" "the respawned record should keep the recorded account"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/mon" "$CASE/claude-worker" \
+    "the respawned secondmate should run on the recorded account, not the pool's first line"
+
+  signed_in_claude_root "$CASE/spare"
+  printf '%s\n' "$CASE/work" "$CASE/spare" > "$HOME_DIR/config/claude-account"
+  "$FAKEBIN/tmux" kill-window -t "firstmate:fm-$id"
+  : > "$CASE/launch.log"
+  out=$(FM_FAKE_LAUNCH_LOG="$CASE/launch.log" FM_TEST_CLAUDE_CONFIG_DIR="$CASE/ambient-claude" \
+    fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" --secondmate); rc=$?
+  expect_code 0 "$rc" "a respawn whose recorded account is no longer declared should re-resolve: $out"
+  assert_grep "account=$CASE/work" "$HOME_DIR/state/$id.meta" "an undeclared recorded account should fall back to the first line"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/work" "$CASE/claude-worker" \
+    "a respawn off an undeclared account should run on the pool's first line"
+
+  rm "$HOME_DIR/config/claude-account"
+  "$FAKEBIN/tmux" kill-window -t "firstmate:fm-$id"
+  : > "$CASE/launch.log"
+  out=$(FM_FAKE_LAUNCH_LOG="$CASE/launch.log" FM_TEST_CLAUDE_CONFIG_DIR="$CASE/ambient-claude" \
+    fm_test_run_spawn "$HOME_DIR" "$WT" "$FAKEBIN" "$id" --secondmate); rc=$?
+  expect_code 0 "$rc" "a respawn in a home whose file is gone should launch unpinned: $out"
+  assert_no_grep "account=" "$HOME_DIR/state/$id.meta" "an unpinned respawn must drop the recorded account"
+  pass "a local secondmate respawn keeps its recorded pool account, and re-resolves once the file no longer declares it"
+}
+
+# --- Claude token source (config/claude-account-tokens) ---------------------
+
+TOKEN_FAKE=fm-test-not-a-secret-worker-token-42
+
+# token_case <name>: a Claude home with a two-seat signed-in pool whose first
+# seat is mapped to a Keychain token source held by the fake security.
+token_case() {
+  new_case "$1" claude
+  fm_fake_security "$FAKEBIN" "$CASE/fake-keychain" "$CASE/security-calls"
+  signed_in_claude_root "$CASE/work"
+  signed_in_claude_root "$CASE/mon"
+  printf '%s\n' "$CASE/work" "$CASE/mon" > "$HOME_DIR/config/claude-account"
+  printf '%s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  printf '%s\n' "$TOKEN_FAKE" > "$CASE/fake-keychain/fm-svc.cm"
+}
+
+# assert_token_nowhere_in_home <msg>: the fake token is in no record, launch
+# file, or output under the home or the recorded launch.
+assert_token_nowhere_in_home() {
+  local hits
+  hits=$(grep -rlF -- "$TOKEN_FAKE" "$HOME_DIR" "$CASE/launch.log" 2>/dev/null || true)
+  [ -z "$hits" ] || fail "$1: $hits"
+}
+
+test_claude_token_source_loads_the_mapped_account_token_only() {
+  local out rc id=acct-token launch
+  token_case token
+  out=$(spawn_ship "$id"); rc=$?
+  expect_code 0 "$rc" "a spawn on a token-mapped account should succeed: $out"
+  assert_contains "$out" "account=$CASE/work" "the spawn should report the pinned account"
+  assert_contains "$out" "account_token=keychain:fm-svc/cm" "the spawn should report the token source reference"
+  assert_not_contains "$out" "$TOKEN_FAKE" "the spawn output must never hold the token"
+  [ "$(cat "$CASE/claude-checks")" = "$CASE/work" ] \
+    || fail "the sign-in check should ask about the mapped root only: $(cat "$CASE/claude-checks")"
+  [ "$(cat "$CASE/claude-check-tokens")" = token-present ] \
+    || fail "the sign-in check must run with the mapped token loaded: $(cat "$CASE/claude-check-tokens")"
+  launch=$(cat "$CASE/launch.log")
+  assert_contains "$launch" "/fm-claude-token.sh' exec 'keychain:fm-svc/cm' --" "the launch should load the token through the helper"
+  assert_contains "$launch" "/fm-claude-token.sh' exec 'keychain:fm-svc/cm' -- env -u " \
+    "the helper must run outside the credential shed, so the token it loads replaces an ambient one and survives the shed"
+  assert_contains "$launch" " bash -c '" "the whole launch expression must run under the helper and the shed"
+  assert_token_nowhere_in_home "no record or launch file may hold the token"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/work" "$CASE/claude-worker" "the worker should run under the mapped root"
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=$TOKEN_FAKE" "$CASE/claude-worker" "the worker should receive the mapped token"
+  assert_grep "ANTHROPIC_API_KEY=unset" "$CASE/claude-worker" "an ambient API key must still be shed"
+  assert_grep "ANTHROPIC_AUTH_TOKEN=unset" "$CASE/claude-worker" "an ambient auth token must still be shed"
+  assert_grep "CLAUDE_CODE_USE_BEDROCK=unset" "$CASE/claude-worker" "an ambient cloud-provider switch must still be shed"
+  assert_grep "keychain:fm-svc/cm" "$CASE/ps-snapshot" "the process snapshot should capture the launch chain"
+  assert_no_grep "$TOKEN_FAKE" "$CASE/ps-snapshot" "the token must not appear in any process's arguments"
+  : > "$CASE/claude-check-tokens"
+  out=$(spawn_ship "$id-mon" --account "$CASE/mon"); rc=$?
+  expect_code 0 "$rc" "a spawn on the unmapped pool account should succeed: $out"
+  assert_not_contains "$out" "account_token=" "an unmapped account must not report a token source"
+  [ "$(cat "$CASE/claude-check-tokens")" = "" ] \
+    || fail "an unmapped account's sign-in check must run without a token: $(cat "$CASE/claude-check-tokens")"
+  assert_not_contains "$(cat "$CASE/launch.log")" "fm-claude-token.sh" "an unmapped account's launch must not load any token"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/mon" "$CASE/claude-worker" "the unmapped worker should run under its own root"
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=unset" "$CASE/claude-worker" "an unmapped account must still shed the pane's ambient token"
+  printf '# %s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-disabled"); rc=$?
+  expect_code 0 "$rc" "a spawn whose mapping is commented out should succeed: $out"
+  assert_not_contains "$out" "account_token=" "a commented-out mapping must not report a token source"
+  run_pane
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=unset" "$CASE/claude-worker" "a commented-out mapping must launch the account on its stored login again"
+  pass "a token-mapped account loads its token into the check and the worker only, an unmapped pool account is unchanged, and a comment disables a mapping"
+}
+
+test_claude_token_map_leaves_unmapped_launches_byte_identical() {
+  local a b id=acct-token-inv
+  token_case token-invariant
+  # Only the task id and two per-spawn generated names differ between the two
+  # launches: the private git-config env file and the launch-brief record.
+  normalize() {
+    sed -e "s/$1/<id>/g" -e 's/git-config\.s[0-9]*\.[0-9]*\.[0-9]*\.sh/git-config.<gen>.sh/g' \
+      -e 's#operational-inbox/[0-9]*-[0-9a-f]*\.msg#operational-inbox/<record>.msg#g' "$CASE/launch.log"
+  }
+  spawn_ship "$id-a" --account "$CASE/mon" >/dev/null || fail "the unmapped spawn beside a token map should succeed"
+  a=$(normalize "$id-a")
+  rm "$HOME_DIR/config/claude-account-tokens"
+  spawn_ship "$id-b" --account "$CASE/mon" >/dev/null || fail "the unmapped spawn without a token map should succeed"
+  b=$(normalize "$id-b")
+  [ "$a" = "$b" ] || fail "an unmapped account's launch must not change when a token map exists for another account"$'\n'"--- with map ---"$'\n'"$a"$'\n'"--- without map ---"$'\n'"$b"
+  pass "a token map for one pool account leaves the other account's launch byte for byte as before"
+}
+
+test_claude_token_source_refuses_without_falling_back() {
+  local out rc id=acct-token-bad
+  token_case token-refusals
+  printf '%s keychain:fm-svc/absent\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-missing"); rc=$?
+  expect_code 1 "$rc" "a mapped account whose item is missing must refuse"
+  assert_refused_before_launch "$id-missing" "$out" \
+    "config/claude-account-tokens maps Claude account '$CASE/work' to keychain:fm-svc/absent, but its token could not be loaded"
+  assert_contains "$out" "has no item 'absent' under service 'fm-svc'" "the helper's reason should be relayed"
+  assert_contains "$out" "never falls back to the account's stored login" "the refusal should say there is no fallback"
+  assert_absent "$CASE/claude-checks" "no sign-in check may run on the stored login when the token cannot be loaded"
+  out=$(CLAUDE_CODE_OAUTH_TOKEN=ambient-invoker-token spawn_ship "$id-ambient"); rc=$?
+  expect_code 1 "$rc" "a token in firstmate's own environment must not substitute for the mapped source"
+  assert_refused_before_launch "$id-ambient" "$out" "could not be loaded"
+  printf '%s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  : > "$CASE/fake-keychain/.locked"
+  out=$(spawn_ship "$id-locked"); rc=$?
+  expect_code 1 "$rc" "a locked keychain must refuse"
+  assert_refused_before_launch "$id-locked" "$out" "could not be loaded"
+  assert_contains "$out" "keychain is locked in this session" "the locked reason should be relayed"
+  rm "$CASE/fake-keychain/.locked"
+  printf 'two\nlines\n' > "$CASE/fake-keychain/fm-svc.cm"
+  out=$(spawn_ship "$id-value"); rc=$?
+  expect_code 1 "$rc" "an item that does not hold one token must refuse"
+  assert_refused_before_launch "$id-value" "$out" "is not a single-line token"
+  printf '%s\n' "$TOKEN_FAKE" > "$CASE/fake-keychain/fm-svc.cm"
+  : > "$CASE/work/ignores-token"
+  out=$(spawn_ship "$id-ignored"); rc=$?
+  expect_code 1 "$rc" "a runner that does not take the token must refuse"
+  assert_refused_before_launch "$id-ignored" "$out" \
+    "claude auth status reports authMethod 'claude.ai' instead of oauth_token"
+  rm "$CASE/work/ignores-token"
+  assert_absent "$CASE/claude-worker" "no refused spawn may start Claude"
+  assert_token_nowhere_in_home "refusals must leave the token in no record"
+  pass "a mapped account refuses a missing item, a locked keychain, a malformed value, and a runner that ignores the token, never falling back"
+}
+
+test_claude_token_map_malformed_refuses_every_claude_launch() {
+  local out rc id=acct-token-cfg n=0 body
+  token_case token-malformed
+  for body in "$CASE/other keychain:fm-svc/cm" "$CASE/work keychain:fm-svc/cm"$'\n'"$CASE/work keychain:fm-svc/cm2" \
+    "$CASE/work file:/tmp/x" "$CASE/work keychain:fm-svc/cm@relative.keychain-db" "$CASE/work keychain:fm-svc/cm"$'\r' \
+    '' "$CASE/work" "$CASE/work  keychain:fm-svc/cm" "ordinary keychain:fm-svc/cm"; do
+    n=$((n + 1))
+    printf '%s' "$body" > "$HOME_DIR/config/claude-account-tokens"
+    out=$(spawn_ship "$id-$n" --account "$CASE/mon"); rc=$?
+    expect_code 1 "$rc" "malformed token map #$n must refuse every Claude launch, including an unmapped account"
+    assert_refused_before_launch "$id-$n" "$out" "config/claude-account-tokens"
+  done
+  assert_contains "$out" "maps 'ordinary', which config/claude-account does not declare" "an undeclared account should be named"
+  assert_absent "$CASE/claude-checks" "a malformed token map must refuse before any sign-in check"
+  rm "$HOME_DIR/config/claude-account-tokens"
+  mkdir "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-dir"); rc=$?
+  expect_code 1 "$rc" "a directory in place of the token map must refuse"
+  assert_refused_before_launch "$id-dir" "$out" "config/claude-account-tokens must be a readable regular file"
+  rmdir "$HOME_DIR/config/claude-account-tokens"
+  rm "$HOME_DIR/config/claude-account"
+  printf '%s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-nopin"); rc=$?
+  expect_code 1 "$rc" "a token map without config/claude-account must refuse"
+  assert_refused_before_launch "$id-nopin" "$out" \
+    "config/claude-account-tokens maps token sources onto config/claude-account, which this home does not have"
+  out=$(spawn_ship "$id-codex" --harness codex); rc=$?
+  expect_code 0 "$rc" "a codex spawn must ignore the Claude token map: $out"
+  pass "a malformed token map refuses every Claude launch before any check, and leaves other runners alone"
+}
+
+# One launch path serves both declared forms of a token source, so the map
+# also covers the entries of a config/claude-accounts list.
+test_account_list_entry_uses_its_token_map_line() {
+  local out rc id=acct-list-map
+  new_case list-token-map claude
+  fm_fake_security "$FAKEBIN" "$CASE/fake-keychain" "$CASE/security-calls"
+  signed_in_claude_root "$CASE/first"
+  signed_in_claude_root "$CASE/second"
+  declare_accounts "$CASE/first" "$CASE/second"
+  printf '%s keychain:fm-svc/one\n%s keychain:fm-svc/retired\n' "$CASE/first" "$CASE/retired" \
+    > "$HOME_DIR/config/claude-account-tokens"
+  printf '%s\n' "$TOKEN_FAKE" > "$CASE/fake-keychain/fm-svc.one"
+  out=$(spawn_ship "$id" --account "$CASE/first"); rc=$?
+  expect_code 0 "$rc" "a list entry with a map line should launch, and a line for an undeclared account must stay inert: $out"
+  assert_contains "$out" "account=$CASE/first" "the spawn should report the chosen entry"
+  assert_contains "$out" "account_token=keychain:fm-svc/one" "the spawn should report the entry's token source"
+  assert_grep "account_token=keychain:fm-svc/one" "$HOME_DIR/state/$id.meta" "the task record should carry the token source reference"
+  [ "$(cat "$CASE/claude-check-tokens")" = token-present ] \
+    || fail "the sign-in check must run with the entry's token loaded: $(cat "$CASE/claude-check-tokens")"
+  assert_token_nowhere_in_home "no record or launch file may hold the token"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/first" "$CASE/claude-worker" "the worker should run under the chosen entry"
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=$TOKEN_FAKE" "$CASE/claude-worker" "the worker should receive the entry's mapped token"
+  assert_no_grep "$TOKEN_FAKE" "$CASE/ps-snapshot" "the token must not appear in any process's arguments"
+  : > "$CASE/claude-check-tokens"
+  out=$(spawn_ship "$id-plain" --account "$CASE/second"); rc=$?
+  expect_code 0 "$rc" "a list entry without a map line should launch on its stored login: $out"
+  assert_not_contains "$out" "account_token=" "an unmapped entry must not report a token source"
+  [ "$(cat "$CASE/claude-check-tokens")" = "" ] \
+    || fail "an unmapped entry's sign-in check must run without a token: $(cat "$CASE/claude-check-tokens")"
+  run_pane
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=unset" "$CASE/claude-worker" "an unmapped entry must still shed the pane's ambient token"
+  rm "$CASE/fake-keychain/fm-svc.one"
+  out=$(spawn_ship "$id-missing" --account "$CASE/first"); rc=$?
+  expect_code 1 "$rc" "a mapped entry whose item is missing must refuse"
+  assert_refused_before_launch "$id-missing" "$out" \
+    "config/claude-account-tokens maps Claude account '$CASE/first' to keychain:fm-svc/one, but its token could not be loaded"
+  assert_contains "$out" "never falls back to the account's stored login" "the refusal must say there is no fallback"
+  printf '%s file:/tmp/x\n' "$CASE/first" > "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-malformed" --account "$CASE/second"); rc=$?
+  expect_code 1 "$rc" "a malformed token map beside a list must refuse every Claude launch, including an unmapped entry"
+  assert_refused_before_launch "$id-malformed" "$out" "config/claude-account-tokens"
+  pass "a token map covers a list's entries: a mapped entry loads its token, an unmapped one keeps its stored login, an undeclared line is inert, and a missing item or malformed map refuses"
+}
+
+# A single-line pin may carry both declared forms; the map line wins.
+test_claude_pin_token_map_line_wins_over_its_declaration_file() {
+  local out rc id=acct-token-both other=fm-test-not-a-secret-declaration-token-9
+  new_case token-precedence claude
+  fake_macos_host
+  fm_fake_security "$FAKEBIN" "$CASE/fake-keychain" "$CASE/security-calls"
+  signed_in_claude_root "$CASE/work"
+  signed_in_claude_root "$CASE/mon"
+  printf '%s\n' "$CASE/work" > "$HOME_DIR/config/claude-account"
+  printf '%s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  printf '%s\n' '{"claude":{"source":"macos-keychain","service":"fm-decl","account":"worker"}}' \
+    > "$HOME_DIR/config/claude-account-credential-source.json"
+  printf '%s\n' "$TOKEN_FAKE" > "$CASE/fake-keychain/fm-svc.cm"
+  printf '%s\n' "$other" > "$CASE/fake-keychain/fm-decl.worker"
+  out=$(spawn_ship "$id"); rc=$?
+  expect_code 0 "$rc" "a pin with both forms should launch on the map line: $out"
+  assert_contains "$out" "account_token=keychain:fm-svc/cm" "the map line must win"
+  assert_contains "$out" "claude-account-credential-source.json is not used for this launch" "the launch should say the declaration file was not used"
+  run_pane
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=$TOKEN_FAKE" "$CASE/claude-worker" "the worker should receive the map line's token"
+  printf '# %s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  out=$(spawn_ship "$id-decl"); rc=$?
+  expect_code 0 "$rc" "with the map line commented out the declaration file should apply: $out"
+  assert_contains "$out" "claude-account-credential-source.json" "the spawn should report the declaration file as the token source"
+  assert_not_contains "$out" "is not used for this launch" "nothing is overridden once the map line is commented out"
+  run_pane
+  assert_grep "CLAUDE_CODE_OAUTH_TOKEN=$other" "$CASE/claude-worker" "the worker should receive the declaration file's token"
+  assert_not_contains "$(cat "$CASE/launch.log" "$HOME_DIR/state/$id-decl.meta")" "$other" "the token never appears in the launch or the record"
+  printf '%s keychain:fm-svc/cm\n' "$CASE/work" > "$HOME_DIR/config/claude-account-tokens"
+  printf '{\n' > "$HOME_DIR/config/claude-account-credential-source.json"
+  out=$(spawn_ship "$id-bad"); rc=$?
+  expect_code 1 "$rc" "a malformed declaration file must refuse even while the map line wins"
+  assert_refused_before_launch "$id-bad" "$out" "malformed"
+  printf '%s\n' '{"claude":{"source":"macos-keychain","service":"fm-decl","account":"worker"}}' \
+    > "$HOME_DIR/config/claude-account-credential-source.json"
+  printf '%s\n' "$CASE/work" "$CASE/mon" > "$HOME_DIR/config/claude-account"
+  out=$(spawn_ship "$id-pool"); rc=$?
+  expect_code 1 "$rc" "a several-line pool must refuse a declaration file beside it"
+  assert_refused_before_launch "$id-pool" "$out" "applies to a single-line Claude account pin"
+  pass "a pin with both token forms launches on its map line, falls to the declaration file when that line is commented out, and a pool refuses a declaration file"
+}
+
+# A per-secondmate Claude pin may itself be a pool: --account selects among its
+# own lines, and the home-wide pool's lines do not apply to that secondmate.
+test_secondmate_pool_pin_selects_among_its_own_lines() {
+  local out rc id=acct-sm-own-pool
+  new_case secondmate-own-pool claude
+  signed_in_claude_root "$CASE/home-acct"
+  signed_in_claude_root "$CASE/mate-a"
+  signed_in_claude_root "$CASE/mate-b"
+  printf '%s\n' "$CASE/home-acct" > "$HOME_DIR/config/claude-account"
+  mkdir -p "$HOME_DIR/config/secondmate-accounts/$id"
+  printf '%s\n' "$CASE/mate-a" "$CASE/mate-b" > "$HOME_DIR/config/secondmate-accounts/$id/claude-account"
+  out=$(spawn_account_secondmate "$id" --account "$CASE/home-acct"); rc=$?
+  expect_code 1 "$rc" "a home-wide line must not select an account for a secondmate with its own pin: $out"
+  assert_refused_before_launch "$id" "$out" "secondmate-accounts/$id/claude-account (declared: "
+  out=$(spawn_account_secondmate "$id" --account "$CASE/mate-b"); rc=$?
+  expect_code 0 "$rc" "a line of the secondmate's own pool should launch: $out"
+  assert_contains "$out" "account=$CASE/mate-b" "the spawn should report the secondmate pool's selected line"
+  run_pane
+  assert_grep "CLAUDE_CONFIG_DIR=$CASE/mate-b" "$CASE/claude-worker" \
+    "the secondmate agent should run on its own pool's selected line"
+  pass "a per-secondmate pool selects among its own lines and refuses the home-wide pool's"
 }
 
 test_remote_secondmate_refuses_account() {
@@ -886,6 +1289,22 @@ test_claude_pin_does_not_fall_back_when_its_keychain_token_is_unavailable() {
   pass "an unavailable mapped token refuses without falling back to the pinned Claude login"
 }
 
+test_absent_pin_keeps_the_launch_unchanged
+test_claude_pin_selects_the_root_and_sheds_ambient_credentials
+test_claude_pin_refuses_a_signed_out_root_despite_an_ambient_login
+test_claude_ordinary_pin_unsets_the_config_root
+test_malformed_pins_refuse_before_launch
+test_claude_pool_defaults_to_the_first_line_and_account_selects_another
+test_claude_pool_and_account_refusals
+test_pi_pin_selects_the_root_and_the_declared_provider
+test_pi_pin_refusals
+test_pi_extension_provider_and_old_pi_fall_back_to_the_model_listing
+test_a_pin_governs_only_its_own_runner
+test_raw_claude_command_receives_the_pin
+test_raw_claude_account_override_refuses_under_a_pin
+test_raw_claude_account_override_is_kept_without_a_pin
+test_local_secondmate_reads_the_launching_home_pin
+test_local_secondmate_respawn_keeps_the_recorded_pool_account
 test_secondmate_account_override
 test_secondmate_account_refusals
 test_local_secondmate_pin_uses_its_keychain_oauth_token
@@ -896,20 +1315,14 @@ test_claude_pin_keeps_the_token_out_of_an_inherited_xtrace
 test_claude_pin_does_not_fall_back_when_its_keychain_token_vanishes_after_the_check
 test_raw_claude_retry_does_not_bypass_a_failed_keychain_read
 test_remote_secondmate_account_override_refuses_locally
+test_claude_token_source_loads_the_mapped_account_token_only
+test_claude_token_map_leaves_unmapped_launches_byte_identical
+test_claude_token_source_refuses_without_falling_back
+test_claude_token_map_malformed_refuses_every_claude_launch
+test_account_list_entry_uses_its_token_map_line
+test_claude_pin_token_map_line_wins_over_its_declaration_file
+test_secondmate_pool_pin_selects_among_its_own_lines
 test_remote_secondmate_refuses_account
-test_absent_pin_keeps_the_launch_unchanged
-test_claude_pin_selects_the_root_and_sheds_ambient_credentials
-test_claude_pin_refuses_a_signed_out_root_despite_an_ambient_login
-test_claude_ordinary_pin_unsets_the_config_root
-test_malformed_pins_refuse_before_launch
-test_pi_pin_selects_the_root_and_the_declared_provider
-test_pi_pin_refusals
-test_pi_extension_provider_and_old_pi_fall_back_to_the_model_listing
-test_a_pin_governs_only_its_own_runner
-test_raw_claude_command_receives_the_pin
-test_raw_claude_account_override_refuses_under_a_pin
-test_raw_claude_account_override_is_kept_without_a_pin
-test_local_secondmate_reads_the_launching_home_pin
 test_no_account_list_keeps_today_and_refuses_account
 test_account_list_launches_the_named_entry
 test_account_list_refusals

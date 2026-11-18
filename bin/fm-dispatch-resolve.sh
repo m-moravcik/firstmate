@@ -654,9 +654,11 @@ RESULT=$(jq -n --arg floor "$CONFIDENCE_FLOOR" --argjson lat "$LAT_MS" --arg non
     (prov($p; $lane) != null and (["known", "partial"] | index(prov($p; $lane).quotaSemantics.status)) != null);
   def applicable($p; $lane; $m; $qs):
     (bare($m)) as $bare |
+    quota_family_scope($p; $bare) as $family |
     [rows($p; $lane)[] | select(
       .scope == "all_models" or .scope == "all_products" or
       ($m != "" and (.scope == ("model:" + $bare) or .scope == ("product:" + $bare))) or
+      ($family != "" and .scope == $family) or
       ($qs != null and .scope == $qs)
     )];
   def floor_state($f; $p; $lane):

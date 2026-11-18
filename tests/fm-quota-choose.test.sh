@@ -639,6 +639,19 @@ out=$(call_choose --snapshot "$LAB/captured.json" --candidate claude:default)
 [ "$out" = "claude default" ] || fail "named model scope overmatched default: $out"
 ok "named model quota matches exact identity only"
 
+# quota-axi names the Fable window by the vendor's model id (model:fable), while a
+# dispatch profile may name the full model id; only the claude-fable-<version>
+# family is evidenced to draw on that window.
+if out=$(call_choose --snapshot "$LAB/captured.json" --candidate claude:claude-fable-5-1 2>/dev/null); then
+  fail "full Fable model id read past its exhausted model:fable window: $out"
+fi
+[ "$out" = "none" ] || fail "full Fable model id returned '$out'"
+out=$(call_choose --snapshot "$LAB/captured.json" --candidate claude:claude-sonnet-5-5)
+[ "$out" = "claude claude-sonnet-5-5" ] || fail "a non-Fable full model id read the Fable window: $out"
+out=$(call_choose --snapshot "$LAB/captured.json" --candidate claude:claude-fable-5-1 --candidate claude:claude-sonnet-5-5)
+[ "$out" = "claude claude-sonnet-5-5" ] || fail "a spent Fable window did not fall through to the next candidate: $out"
+ok "a full claude-fable-* model id reads the model:fable window"
+
 jq '(.providers[] | select(.provider == "claude").quotaSemantics.effectiveAvailability[1].status) = "typo"' "$LAB/captured.json" > "$INVALID_AVAILABILITY"
 if err=$(call_choose --snapshot "$INVALID_AVAILABILITY" --candidate claude:default 2>&1); then
   fail "invalid availability status unexpectedly dispatched"
@@ -765,5 +778,100 @@ out=$(bash -c 'set -e; . "$1/fm-quota-axi-lib.sh"; fm_quota_single_provider_for_
   || fail "provider-table lookup exited nonzero under set -e"
 [ "$out" = claude ] || fail "provider-table lookup under set -e printed: $out"
 ok "provider-table lookup prints the provider when called directly under set -e"
+
+# Claude quota readings: a live Claude lane quota-axi could not read here is
+# measured from a recent token-free reading of the same account.
+READ_DIR="$LAB/readings"
+READ_LIVE="$LAB/reuse-live.json"
+mkdir -p "$READ_DIR"
+
+# reading_at <age seconds>: the refreshedAt stamp of a reading that old.
+reading_at() {
+  jq -nr --argjson age "$1" '(now - $age | floor) | strftime("%Y-%m-%dT%H:%M:%S.000Z")'
+}
+
+# write_reading <age seconds> <identity-json>: one fresh claude lane at /acct.
+write_reading() {
+  jq -n --arg at "$(reading_at "$1")" --argjson id "$2" '{
+    schemaVersion: 6,
+    providers: [{provider: "claude", accountKey: "profile:remote", account: $id,
+      state: {status: "fresh", stale: false, refreshedAt: $at},
+      accountLocator: {kind: "config-dir", path: "/acct"},
+      quotaSemantics: {status: "known", effectiveAvailability: [
+        {scope: "all_models", status: "known", effectivePercentRemaining: 55, runway: {status: "through_reset"}}]}}]}
+  ' > "$READ_DIR/pxl.json"
+}
+
+# write_live <state> <identity-json>: the live default-keyed claude lane.
+write_live() {
+  jq -n --arg state "$1" --argjson id "$2" '{
+    schemaVersion: 6,
+    providers: [{provider: "claude", accountKey: "default", account: $id,
+      state: {status: $state, stale: ($state != "fresh")},
+      accountLocator: {kind: "config-dir", path: "/acct"},
+      quotaSemantics: (if $state == "fresh" then
+        {status: "known", effectiveAvailability: [
+          {scope: "all_models", status: "known", effectivePercentRemaining: 0, runway: {status: "exhausted_now"}}]}
+       else {status: "unknown", effectiveAvailability: []} end)}]}
+  ' > "$READ_LIVE"
+}
+
+# choose_with_readings <stderr-file> [args...]
+choose_with_readings() {
+  local err=$1
+  shift
+  FM_CLAUDE_QUOTA_READINGS="$READ_DIR/*.json" "$BIN/fm-quota-choose.sh" --snapshot "$READ_LIVE" "$@" 2>"$err"
+}
+
+write_live stale null
+write_reading 120 '{"accountId":"acct-1"}'
+out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default) \
+  || fail "a recent reading did not measure the stale Claude lane"
+[ "$out" = "claude default" ] || fail "reused Claude lane chose: $out"
+grep -q "^note: claude:default quota measured via reading $READ_DIR/pxl.json refreshedAt " "$LAB/reuse.err" \
+  || fail "reused Claude lane did not name its reading: $(cat "$LAB/reuse.err")"
+ok "a stale Claude lane is measured from a recent reading and the choice names it on stderr"
+
+write_reading 700 '{"accountId":"acct-1"}'
+if out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default); then
+  fail "a reading older than the bound unexpectedly measured the lane: $out"
+fi
+[ "$out" = none ] || fail "old reading returned: $out"
+[ ! -s "$LAB/reuse.err" ] || fail "an ignored reading wrote to stderr: $(cat "$LAB/reuse.err")"
+out=$(FM_CLAUDE_QUOTA_READING_MAX_AGE=900 choose_with_readings "$LAB/reuse.err" --candidate claude:default) \
+  || fail "FM_CLAUDE_QUOTA_READING_MAX_AGE did not widen the bound"
+[ "$out" = "claude default" ] || fail "widened bound chose: $out"
+ok "a reading older than the bound stays unmeasured unless FM_CLAUDE_QUOTA_READING_MAX_AGE allows it"
+
+write_live stale '{"accountId":"acct-2"}'
+write_reading 60 '{"accountId":"acct-1"}'
+if out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default); then
+  fail "an identity mismatch unexpectedly measured the lane: $out"
+fi
+[ "$out" = none ] || fail "identity mismatch returned: $out"
+ok "a reading for a different account identity is ignored"
+
+write_live fresh null
+write_reading 10 '{"accountId":"acct-1"}'
+if out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default); then
+  fail "a reading overrode a live fresh exhausted lane: $out"
+fi
+[ "$out" = none ] || fail "live fresh lane returned: $out"
+ok "a live fresh Claude lane is never replaced by a reading"
+
+write_live stale null
+rm -f "$READ_DIR/pxl.json"
+if out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default); then
+  fail "a stale lane without readings unexpectedly chose: $out"
+fi
+[ "$out" = none ] || fail "no readings returned: $out"
+[ ! -s "$LAB/reuse.err" ] || fail "no readings wrote to stderr: $(cat "$LAB/reuse.err")"
+printf 'not json' > "$READ_DIR/garbage.json"
+if out=$(choose_with_readings "$LAB/reuse.err" --candidate claude:default); then
+  fail "an unparsable reading unexpectedly chose: $out"
+fi
+[ "$out" = none ] || fail "unparsable reading returned: $out"
+rm -f "$READ_DIR/garbage.json"
+ok "missing or unparsable reading files leave the stale lane unmeasured"
 
 printf '# all fm-quota-choose tests passed\n'

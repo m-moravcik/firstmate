@@ -377,6 +377,7 @@ family_for_basename() {
     fm-herdr-projected-cd-live-e2e.test.sh|\
     fm-herdr-pi-stale-registration-live-e2e.test.sh|\
     fm-worker-account-live-e2e.test.sh|\
+    fm-claude-token-live-e2e.test.sh|\
     fm-opencode-primary-live-e2e.test.sh|fm-pi-branch-live-e2e.test.sh|\
     fm-pi-branch-responsiveness-live-e2e.test.sh|\
     fm-pi-primary-live-e2e.test.sh|fm-pi-worker-stream-live-e2e.test.sh|fm-pi-codex-native.test.sh|fm-omp-primary-live-e2e.test.sh|\
@@ -450,6 +451,7 @@ family_for_basename() {
     fm-busy-state.test.sh|fm-capacity.test.sh|fm-capacity-auto.test.sh|fm-lane-vitals.test.sh|\
     fm-classify-corr-token.test.sh|\
     fm-claude-account-quota.test.sh|\
+    fm-claude-account.test.sh|fm-claude-token.test.sh|\
     fm-claude-stop-autoarm.test.sh|fm-cursor-harness.test.sh|\
     fm-dispatch-resolve.test.sh|\
     fm-extension-binding.test.sh|fm-gitignore-config.test.sh|\
@@ -778,8 +780,11 @@ tests/fm-ci-workflow.test.sh 5833
 tests/fm-classify-corr-token.test.sh 23085
 tests/fm-classify-decision-key.test.sh 4362
 tests/fm-claude-account-quota.test.sh 2492
+tests/fm-claude-account.test.sh 11305
 tests/fm-claude-stop-autoarm-live-e2e.test.sh 73
 tests/fm-claude-stop-autoarm.test.sh 61189
+tests/fm-claude-token-live-e2e.test.sh 145
+tests/fm-claude-token.test.sh 5562
 tests/fm-claude-tool-exclude-live.test.sh 75
 tests/fm-claude-trust.test.sh 12010
 tests/fm-cmux-claude-composer-live-e2e.test.sh 77

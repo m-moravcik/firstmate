@@ -688,6 +688,26 @@ skip-runner: pi-signed is not installed, so its pin check was not exercised
 
 The guard submits no prompt and spends no tokens, so it runs by default wherever a runner is installed; rerun it after every Claude or Pi upgrade.
 
+## Claude token source
+
+`bin/fm-claude-token.sh` and the token branch of `bin/fm-worker-account-lib.sh`'s sign-in check decide from vendor output: the exit status of `security find-generic-password` (44 for a missing item, 36 for a keychain that is locked or needs an interactive unlock) and the JSON of `claude auth status`, whose `authMethod` of `oauth_token` is what proves a mapped launch spends the token rather than the root's stored login.
+`tests/fm-claude-token-live-e2e.test.sh` stores a fake token in a throwaway keychain file under the test root through the helper's standard-input path, runs the real check against an empty Claude root with and without the mapping, snapshots every process argument list while the loaded command runs, locks the keychain, and asks for a missing item, then deletes the keychain file.
+The divergence it depends on is asserted first: the same empty root refuses without the token.
+
+Verified 2026-11-18 on Claude Code 2.1.327 and macOS 27.0.1 (`security` from /usr/bin) on pxl.
+
+```sh
+bash tests/fm-claude-token-live-e2e.test.sh
+```
+
+```
+ok - claude 2.1.327 (Claude Code) + macOS security: a mapped token signs an empty root in as oauth_token, never reaches argv, and a locked or missing item refuses
+# claude token live guard checked: claude security
+```
+
+`claude auth status` is offline: with any `CLAUDE_CODE_OAUTH_TOKEN` in its environment it reports `loggedIn: true` and `authMethod: oauth_token` without validating the value, so the check proves which credential a launch spends, not that the API accepts it.
+The guard submits no prompt and spends no tokens, so it runs by default wherever both tools are installed and skips elsewhere; rerun it after every Claude or macOS upgrade.
+
 ## Claude worker tool exclusions
 
 `config/crew-exclude-tools` reaches a Claude ship or scout launch as `--disallowedTools '<names>'` placed directly before `--append-system-prompt`, because the option is variadic and would otherwise swallow the launch prompt.

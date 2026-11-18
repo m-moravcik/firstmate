@@ -84,10 +84,15 @@
 #              A replacement Claude or Pi profile must also pass this home's
 #              worker account pin (bin/fm-worker-account-lib.sh) here, so a pin
 #              that no longer resolves or is signed out refuses before the old
-#              agent stops. Under a declared config/claude-accounts list, a
-#              Claude ship or scout keeps the account its record names, and
-#              only an explicit --account <entry> moves it to another
-#              declared one, checked here the same way.
+#              agent stops. A Claude replacement in a several-line
+#              config/claude-account pool stays on the Claude account recorded
+#              on the task while the pool still declares it, and refuses here
+#              when it no longer does; a single-line pin is re-resolved as
+#              before. Under a declared config/claude-accounts list, a Claude
+#              ship or scout keeps the account its record names. Only an
+#              explicit --account <entry> moves a task to another declared
+#              account, checked here the same way and passed through to the
+#              launch owner.
 #              A replacement omp secondmate likewise passes its per-secondmate
 #              omp profile pin (bin/fm-omp-profile-lib.sh) before the old agent
 #              stops.
@@ -1081,17 +1086,18 @@ resolve_relaunch_profile() {
   fi
   # The launch owner applies this home's worker account pin too, but only after
   # the old agent has been stopped, so a pin that no longer resolves or is
-  # signed out must refuse here, while nothing has changed yet.
-  # Under a declared Claude account list, the replacement stays on the
-  # account the task records unless --account explicitly moves it.
-  local account_model=$TARGET_MODEL account_mate=
+  # signed out, or a recorded Claude account the pool no longer declares, must
+  # refuse here, while nothing has changed yet. Under a declared Claude account
+  # list, the replacement stays on the account the task records unless
+  # --account explicitly moves it.
+  local account_model=$TARGET_MODEL account_mate='' account_config=${FM_CONFIG_OVERRIDE:-$FM_HOME/config}
   [ "$account_model" != default ] || account_model=
   [ "$KIND" != secondmate ] || account_mate=$ID
-  TARGET_ACCOUNT=$(fm_worker_account_relaunch_request "$TARGET_HARNESS" "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" \
-    "$PRIOR_HARNESS" "$(fm_meta_get "$META" account)" "$NEW_ACCOUNT" "$account_mate") || return 1
-  fm_worker_account_select "$TARGET_HARNESS" "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" \
+  TARGET_ACCOUNT=$(fm_worker_account_relaunch_request "$TARGET_HARNESS" "$account_config" \
+    "$PRIOR_HARNESS" "$(fm_meta_get "$META" account)" "$NEW_ACCOUNT" "$account_mate" "$ID") || return 1
+  fm_worker_account_select "$TARGET_HARNESS" "$account_config" \
     "$account_model" "$TARGET_HARNESS" "" "$account_mate" "$TARGET_ACCOUNT" >/dev/null || return 1
-  fm_omp_profile_select "$TARGET_HARNESS" "${FM_CONFIG_OVERRIDE:-$FM_HOME/config}" \
+  fm_omp_profile_select "$TARGET_HARNESS" "$account_config" \
     "$account_mate" >/dev/null || return 1
   # Likewise polytoken's launch profile and wiring refusals
   # (bin/fm-polytoken-lib.sh owns them). The launch owner retires the prior
@@ -1301,7 +1307,7 @@ do_relaunch() {
 
   journal_write complete "${CHECKPOINT_LINES[@]}" "$note_line" "exit_result=$exit_result"
   RELAUNCH_ACTIVE=0
-  echo "relaunched $ID harness=$TARGET_HARNESS from=$PRIOR_RECORDED_HARNESS model=$TARGET_MODEL effort=$TARGET_EFFORT backend=$BACKEND endpoint=$T worktree=$WT"
+  echo "relaunched $ID harness=$TARGET_HARNESS from=$PRIOR_RECORDED_HARNESS model=$TARGET_MODEL effort=$TARGET_EFFORT backend=$BACKEND endpoint=$T worktree=$WT${TARGET_ACCOUNT:+ account=$TARGET_ACCOUNT}"
 }
 
 # --- verbs ------------------------------------------------------------------

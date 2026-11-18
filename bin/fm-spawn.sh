@@ -3,7 +3,7 @@
 # secondmate in its isolated firstmate home.
 # Usage: fm-spawn.sh <task-id> <project-dir> --mode <no-mistakes|direct-PR|local-only> --yolo <on|off> [--branch-prefix <prefix>] [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--dispatch-override <reason>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
 #        fm-spawn.sh <task-id> <project-dir> --scout [--base-branch <branch>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--dispatch-override <reason>] [--hermes-profile <name>] [--account <entry>] [--backend <name>] [--herdr-resume-lock-wait]
-#        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--backend <name>] --secondmate
+#        fm-spawn.sh <task-id> [<firstmate-home>] [--harness <name>|harness|launch-command] [--model <name>] [--effort <level>] [--account <entry>] [--backend <name>] --secondmate
 #   --mode and --yolo are this task's delivery contract, REQUIRED for every ship
 #   spawn and refused on --scout and --secondmate spawns. Firstmate resolves both
 #   per task at intake (AGENTS.md section 7); data/projects.md holds the captain's
@@ -515,14 +515,31 @@
 #   in this launching home, then falls back to its home-wide pin when absent.
 #   Pins are never inherited; remote per-mate overrides refuse locally.
 #   T3 Code refuses a pin because its provider instance owns the account.
-#   bin/fm-worker-account-lib.sh owns parsing, the check, and the shed list.
+#   --account <entry> launches a Claude worker on one exact declared line of
+#   a several-line config/claude-account pool (or of the secondmate's own pin)
+#   instead of its first line when the home declares no config/claude-accounts
+#   list; it is refused for any other runner, for a home without that pool
+#   file, for an undeclared entry, and for a remote secondmate, whose own home
+#   owns its pin. In a pool, a relaunch without --account keeps the account
+#   recorded on the task while the file still declares it and refuses when it
+#   does not; a single-line pin re-resolves as before. A local secondmate
+#   respawn without --account keeps it the same way, but when the pool no
+#   longer declares it the respawn re-resolves instead of refusing.
+#   A Claude account with a declared token source - a config/claude-account-tokens
+#   line, or a credential-source declaration file - launches with its
+#   long-lived token loaded into the worker's environment by
+#   bin/fm-claude-token.sh and is reported as account_token=<source>; an
+#   unloadable token refuses the launch instead of falling back.
+#   bin/fm-worker-account-lib.sh owns parsing, pool selection, the relaunch
+#   rule, the check, the shed list, and the token sources.
 # Claude account list (config/claude-accounts, --account <entry>):
 #   Opt-in and Claude-only. When the list is present, a Claude ship or scout
 #   spawn must name one declared entry with --account, chosen at intake, and
 #   that entry is checked, launched, and recorded exactly like a pin; a
-#   relaunch reuses the recorded entry unless --account moves it. Without the
-#   list, --account refuses and nothing else changes. docs/configuration.md
-#   "Several Claude accounts" owns the contract.
+#   relaunch reuses the recorded entry unless --account moves it. A secondmate
+#   refuses --account under a list. Without the list, --account selects a
+#   config/claude-account line as above. docs/configuration.md "Several Claude
+#   accounts" owns the contract.
 # Per-secondmate omp profile (config/secondmate-accounts/<id>/omp-profile):
 #   Opt-in, and read only for a local secondmate's own omp agent;
 #   bin/fm-omp-profile-lib.sh owns the file and its refusals. A pinned launch
@@ -1216,9 +1233,11 @@ fi
   echo "error: --account requires a non-empty value" >&2
   exit 1
 }
-# A secondmate, local or remote, launches on its own per-mate pin, so --account
-# is refused here, before the remote route could ignore it.
-[ "$ACCOUNT_SET" -eq 0 ] || [ "$KIND" != secondmate ] || {
+# Under a config/claude-accounts list a secondmate, local or remote, launches on
+# its own per-mate pin, so --account is refused here, before the remote route
+# could ignore it. Without the list a local secondmate may name a line of its
+# config/claude-account pool, and the remote route refuses --account itself.
+[ "$ACCOUNT_SET" -eq 0 ] || [ "$KIND" != secondmate ] || { [ ! -e "$CONFIG/claude-accounts" ] && [ ! -L "$CONFIG/claude-accounts" ]; } || {
   echo "error: --account applies to ships and scouts; secondmate ${POS[0]:-} launches on its own config/secondmate-accounts/<id>/claude-account pin" >&2
   exit 1
 }
@@ -1374,6 +1393,12 @@ spawn_remote_secondmate() {
     fm_lock_release "$registry_lock" || true
     fm_lock_release "$SPAWN_TASK_LOCK" || true
     return 3
+  fi
+  if [ "$ACCOUNT_SET" -eq 1 ]; then
+    fm_lock_release "$registry_lock" || true
+    fm_lock_release "$SPAWN_TASK_LOCK" || true
+    echo "error: --account selects a line of this home's config/claude-account, but remote secondmate $id launches on its host from its own home's configuration; drop --account" >&2
+    return 1
   fi
   host=$(secondmate_registry_field "$DATA/secondmates.md" "$id" host)
   root=$(secondmate_registry_field "$DATA/secondmates.md" "$id" root)
@@ -2459,6 +2484,7 @@ RAW_LAUNCH=0
 # validation teardown uses, so a malformed, ambiguous, or foreign record
 # refuses here exactly as it refuses there.
 RELAUNCH_PRIOR_HARNESS=
+RELAUNCH_PRIOR_ACCOUNT=
 # 1 when the recorded endpoint is authoritatively gone and this relaunch must
 # create a fresh one for the task rather than adopt its recorded address.
 RELAUNCH_REBIND=0
@@ -2559,6 +2585,7 @@ if [ "$RELAUNCH" -eq 1 ]; then
       ;;
   esac
   RELAUNCH_PRIOR_HARNESS=$(fm_meta_get "$RELAUNCH_META" harness)
+  RELAUNCH_PRIOR_ACCOUNT=$(fm_meta_get "$RELAUNCH_META" account)
   KIND=$(fm_meta_get "$RELAUNCH_META" kind)
   [ -n "$KIND" ] || KIND=ship
   # A secondmate whose endpoint is gone already has ONE owner for that
@@ -3530,20 +3557,32 @@ RAW_COMMAND=
 [ "$RAW_LAUNCH" = 0 ] || RAW_COMMAND=$ARG3
 WORKER_ACCOUNT_MATE=
 [ "$KIND" != secondmate ] || WORKER_ACCOUNT_MATE=$ID
-# A declared Claude account list (config/claude-accounts) needs the entry this
-# launch spends: --account on a fresh spawn, and on a relaunch that flag or
-# else the account the task already records.
+# Which declared Claude account this launch spends: --account on a fresh
+# spawn; on a relaunch that flag or else the account the task records, kept
+# under a config/claude-accounts list or while a several-line
+# config/claude-account pool still declares it
+# (fm_worker_account_relaunch_request). A local secondmate respawn without
+# --account keeps its recorded pool account the same way, but re-resolves
+# instead of refusing once the pool no longer declares it.
 WORKER_ACCOUNT_REQUEST=$ACCOUNT_ARG
 if [ "$RELAUNCH" -eq 1 ]; then
-  WORKER_ACCOUNT_REQUEST=$(fm_worker_account_relaunch_request "$HARNESS" "$CONFIG" "$RELAUNCH_PRIOR_HARNESS" \
-    "$(fm_meta_get "$RELAUNCH_META" account)" "$ACCOUNT_ARG" "$WORKER_ACCOUNT_MATE") || exit 1
+  WORKER_ACCOUNT_REQUEST=$(fm_worker_account_relaunch_request "$HARNESS" "$CONFIG" \
+    "$(fm_control_harness_family "$RELAUNCH_PRIOR_HARNESS")" "$RELAUNCH_PRIOR_ACCOUNT" "$ACCOUNT_ARG" \
+    "$WORKER_ACCOUNT_MATE" "$ID") || exit 1
+elif [ "$KIND" = secondmate ] && [ -z "$ACCOUNT_ARG" ]; then
+  WORKER_ACCOUNT_REQUEST=$(fm_worker_account_relaunch_entry "$HARNESS" "$CONFIG" \
+    "$(fm_control_harness_family "$(fm_meta_get "$STATE/$ID.meta" harness)")" \
+    "$(fm_meta_get "$STATE/$ID.meta" account)" "" "$ID" "$WORKER_ACCOUNT_MATE" 2>/dev/null) || WORKER_ACCOUNT_REQUEST=
 fi
 WORKER_ACCOUNT=$(fm_worker_account_select "$HARNESS" "$CONFIG" "$MODEL" "${PI_BIN:-$HARNESS}" "$RAW_COMMAND" "$WORKER_ACCOUNT_MATE" "$WORKER_ACCOUNT_REQUEST") || exit 1
 WORKER_ACCOUNT_DECLARED=${WORKER_ACCOUNT%%$'\t'*}
 WORKER_ACCOUNT_ROOT=${WORKER_ACCOUNT#*$'\t'}
 WORKER_ACCOUNT_PROVIDER=${WORKER_ACCOUNT_ROOT#*$'\t'}
 WORKER_ACCOUNT_ROOT=${WORKER_ACCOUNT_ROOT%%$'\t'*}
-WORKER_ACCOUNT_SOURCE_FILE=${WORKER_ACCOUNT_PROVIDER#*$'\t'}
+# What bin/fm-claude-token.sh loads this Claude account's token from: a
+# config/claude-account-tokens reference or a credential-source declaration
+# file (fm_worker_account_select owns which), empty for a stored login.
+WORKER_ACCOUNT_TOKEN_SOURCE=${WORKER_ACCOUNT_PROVIDER#*$'\t'}
 WORKER_ACCOUNT_PROVIDER=${WORKER_ACCOUNT_PROVIDER%%$'\t'*}
 # T3 starts the agent itself, at full access, with its provider instance's own
 # account and environment, so a launch setting only a Firstmate-built command
@@ -7368,6 +7407,7 @@ preserve_relaunch_meta() {
   # task record stays byte-identical.
   [ -z "$WORKER_ACCOUNT" ] || echo "account=$WORKER_ACCOUNT_DECLARED"
   [ -z "$WORKER_ACCOUNT_PROVIDER" ] || echo "account_provider=$WORKER_ACCOUNT_PROVIDER"
+  [ -z "$WORKER_ACCOUNT_TOKEN_SOURCE" ] || echo "account_token=$WORKER_ACCOUNT_TOKEN_SOURCE"
   # The per-secondmate omp profile pin, only when one applies, so every other
   # task record stays byte-identical.
   [ -z "$OMP_PROFILE_PIN" ] || echo "omp_profile=$OMP_PROFILE_PIN"
@@ -7697,21 +7737,23 @@ esac
 # an unset value is the single-store default and needs no prefix.
 # A home's worker account pin replaces that forwarding: the launch names the
 # pinned root (or unsets the variable for the ordinary Claude account) and
-# sheds ambient credentials that could override it. A declared token source
-# wraps the command to load its OAuth token; the env prefix preserves that
-# token while shedding the other ambient credentials.
+# sheds ambient credentials that could override it. A declared token source,
+# in either form (config/claude-account-tokens or a credential-source
+# declaration file), wraps the command so bin/fm-claude-token.sh loads its
+# OAuth token; the env prefix preserves that token while shedding the other
+# ambient credentials, and the token is never a launch word.
 if [ -n "$WORKER_ACCOUNT" ]; then
   case "$HARNESS" in
   claude)
-    if [ -n "$WORKER_ACCOUNT_SOURCE_FILE" ]; then
+    if [ -n "$WORKER_ACCOUNT_TOKEN_SOURCE" ]; then
       # Evaluate the whole expression only after token loading and credential
       # shedding, so a raw command's retry cannot bypass either boundary.
       LAUNCH="bash -c $(shell_quote "$LAUNCH")"
     fi
     if [ -n "$WORKER_ACCOUNT_ROOT" ]; then
-      LAUNCH="$(fm_worker_account_claude_shed "$WORKER_ACCOUNT_SOURCE_FILE") CLAUDE_CONFIG_DIR=$(shell_quote "$WORKER_ACCOUNT_ROOT") $LAUNCH"
+      LAUNCH="$(fm_worker_account_claude_shed "$WORKER_ACCOUNT_TOKEN_SOURCE") CLAUDE_CONFIG_DIR=$(shell_quote "$WORKER_ACCOUNT_ROOT") $LAUNCH"
     else
-      LAUNCH="$(fm_worker_account_claude_shed "$WORKER_ACCOUNT_SOURCE_FILE") -u CLAUDE_CONFIG_DIR $LAUNCH"
+      LAUNCH="$(fm_worker_account_claude_shed "$WORKER_ACCOUNT_TOKEN_SOURCE") -u CLAUDE_CONFIG_DIR $LAUNCH"
     fi
     ;;
   pi | pi-signed)
@@ -7721,8 +7763,8 @@ if [ -n "$WORKER_ACCOUNT" ]; then
 elif [ "$HARNESS" = claude ] && [ -n "${CLAUDE_CONFIG_DIR:-}" ]; then
   LAUNCH="CLAUDE_CONFIG_DIR=$(shell_quote "$CLAUDE_CONFIG_DIR") $LAUNCH"
 fi
-if [ -n "$WORKER_ACCOUNT_SOURCE_FILE" ]; then
-  LAUNCH="$(shell_quote "$FM_WORKER_ACCOUNT_TOKEN_HELPER") exec $(shell_quote "$WORKER_ACCOUNT_SOURCE_FILE") -- $LAUNCH"
+if [ -n "$WORKER_ACCOUNT_TOKEN_SOURCE" ]; then
+  LAUNCH="$(shell_quote "$FM_WORKER_ACCOUNT_TOKEN_HELPER") exec $(shell_quote "$WORKER_ACCOUNT_TOKEN_SOURCE") -- $LAUNCH"
 fi
 # Like CLAUDE_CONFIG_DIR above, FM_HOME cannot be left to pane inheritance:
 # every worker gets its home explicitly, or its bin/*.sh scripts fall back to
@@ -8321,6 +8363,7 @@ SPAWN_DELIVERY=
 SPAWN_ACCOUNT=
 [ -z "$WORKER_ACCOUNT" ] || SPAWN_ACCOUNT=" account=$WORKER_ACCOUNT_DECLARED"
 [ -z "$WORKER_ACCOUNT_PROVIDER" ] || SPAWN_ACCOUNT="$SPAWN_ACCOUNT account_provider=$WORKER_ACCOUNT_PROVIDER"
+[ -z "$WORKER_ACCOUNT_TOKEN_SOURCE" ] || SPAWN_ACCOUNT="$SPAWN_ACCOUNT account_token=$WORKER_ACCOUNT_TOKEN_SOURCE"
 [ -z "$OMP_PROFILE_PIN" ] || SPAWN_ACCOUNT="$SPAWN_ACCOUNT omp_profile=$OMP_PROFILE_PIN"
 # Opt-in fleet activity ledger (docs/fleet-ledger.md); off costs one file test.
 [ ! -e "$CONFIG/fleet-ledger" ] || [ "$RELAUNCH" -eq 1 ] || FM_HOME=$FM_HOME FM_STATE_OVERRIDE=$STATE FM_CONFIG_OVERRIDE=$CONFIG "$SCRIPT_DIR/fm-fleet-ledger.sh" dispatched "$ID" "$KIND" "${PROJ_ABS##*/}" "$HARNESS" "$MODEL" || true

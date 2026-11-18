@@ -1675,10 +1675,11 @@ Each relaunch installs a fresh worker extension with the home's current list, so
 ## Worker account pin (config/claude-account, config/pi-account)
 
 A home that mixes accounts for one runner, such as a work login and a personal one, can pin the account its own Claude and Pi workers launch on.
+A home with several Claude seats can instead declare a Claude account pool, so firstmate can move Claude work to another seat when one runs low.
 The pin is opt-in: without a home-wide or per-secondmate pin, pane-backed Claude launches keep receiving firstmate's own `CLAUDE_CONFIG_DIR` when it is set.
 Unpinned Pi launches use the destination pane's ambient account.
 
-Both files are local and gitignored.
+Both files are local and gitignored, as is the optional [`config/claude-account-tokens`](#claude-token-source-configclaude-account-tokens) that gives a pooled Claude account a long-lived token.
 
 | Runner | File | Variable the launch receives | `ordinary` means |
 | --- | --- | --- | --- |
@@ -1688,9 +1689,10 @@ Both files are local and gitignored.
 ### File format and provider selection
 
 `config/claude-account` holds one line: `ordinary`, or the absolute path of an existing Claude config directory.
+It may instead hold a pool: several such lines, all distinct, whose first line is the home's default account.
 `config/pi-account` holds that same root on line 1 and, on line 2, the providers this home may spend, separated by spaces, for example `openai-codex anthropic`.
 
-A final newline is optional; any other line, a relative path, or a control character such as a CR refuses.
+A final newline is optional; a blank or repeated line, any other line, a relative path, or a control character such as a CR refuses.
 For Claude, `ordinary` unsets `CLAUDE_CONFIG_DIR` rather than pointing it at `~/.claude`, because Claude reads `$CLAUDE_CONFIG_DIR/.claude.json` and keys its macOS Keychain entry to any directory that is set ([authentication, "Credential management"](https://code.claude.com/docs/en/authentication#credential-management)).
 
 A Pi root can hold several provider logins at once, so the root alone does not say which account a launch spends.
@@ -1707,14 +1709,67 @@ A raw Claude launch command refuses if its leading assignments set `CLAUDE_CONFI
 The assignment would override the pin.
 The refusal names the variable; remove that assignment from the raw command, or change or remove `config/claude-account`.
 
+### Claude account pool
+
+A launch without `--account` uses the pool's first line, exactly as a single-line pin does.
+`fm-spawn.sh --account <entry>` launches a Claude worker on another line instead; the entry must equal one declared line exactly, and the flag refuses for any other runner, in a home without `config/claude-account`, and for a remote secondmate, whose own home owns its pin.
+Every declared root must be a readable, searchable directory, but only the account a launch selects is asked whether it is signed in.
+
+A relaunch in a pool keeps the account recorded on its task while the file still declares it.
+When the pool no longer declares that account, the relaunch refuses before the running worker stops and names the account; restore the line, or relaunch with `--account <entry>` to move the task deliberately.
+That includes `/updatefirstmate`'s local secondmate restart, which reports such a mate as unreached with the refusal.
+A single-line pin is re-read on every relaunch, as before, so changing that line moves every relaunched task to the new account.
+A home whose file is gone relaunches unpinned, as before.
+A local secondmate respawn, such as the liveness sweep's recovery, keeps the recorded account the same way; when the pool no longer declares it, the respawn uses the pool's first line instead of refusing.
+The Pi pin keeps one root, and its relaunch re-reads the current file.
+
+Firstmate chooses among declared accounts with [`bin/fm-claude-account.sh`](../bin/fm-claude-account.sh) `pick`, which reads `quota-axi` once and prints the evidence for every declared account before naming one; its header owns the lane matching, ranking, and exit codes.
+That needs a `quota-axi` that reports separate Claude account lanes with their `--full` account locators; an older build leaves every account unmeasured, and the pick then names the first line and says so.
+Only the captain edits the pool; firstmate chooses within it.
+
 Before any worker endpoint, local copy, or task record exists, and before a relaunch stops the running worker, Firstmate asks the runner itself whether the pinned account is signed in: `claude auth status` for Claude, and `pi auth check --provider <provider> --json --no-refresh` for Pi, falling back to `pi --list-models <provider>` for a provider an extension registers.
 The stored-login check runs with only `HOME`, `PATH`, `TMPDIR`, `USER`, `LOGNAME`, and the pinned root in its environment, so a credential variable in firstmate's own environment cannot answer for an empty root.
 
 A pinned Claude launch also unsets the environment credentials Claude ranks above a stored login, such as `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN`, and the Bedrock and Vertex switches ([authentication precedence](https://code.claude.com/docs/en/authentication#authentication-precedence)).
-With a [Claude token source](#claude-token-source-configclaude-account-credential-sourcejson), the launch sets `CLAUDE_CODE_OAUTH_TOKEN` from that source instead of unsetting it.
+With a Claude token source, in either [declared form](#claude-token-source-configclaude-account-tokens), the launch sets `CLAUDE_CODE_OAUTH_TOKEN` from that source instead of unsetting it.
 Pi ranks a root's stored logins above environment variables, so a pinned Pi launch unsets nothing.
 
 A home that authenticates Claude through environment credentials on purpose should leave the pin absent.
+
+### Claude token source (config/claude-account-tokens)
+
+A seat whose stored login is shared by many workers renews one refresh token from all of them at once, and the losers of that race are signed out.
+A long-lived token from `claude setup-token` avoids the race, but Claude Code consumes it only through `CLAUDE_CODE_OAUTH_TOKEN`, which a pinned launch otherwise removes.
+The optional local, gitignored `config/claude-account-tokens` resolves that: it maps declared Claude accounts to a token each, so a pinned launch on that account spends its token instead of the stored login, while the pin, the pool, and the shed stay exactly as above.
+
+Each line is `<account> <source>`: a line of `config/claude-account`, or an entry of [`config/claude-accounts`](#several-claude-accounts-configclaude-accounts), exactly, one space, and a source reference.
+The account is everything before the last space, so a root path may contain spaces.
+A line starting with `#` is a comment, and commenting a line out is how a mapping is disabled without touching the item or the pin.
+The only source kind is a macOS Keychain generic password, `keychain:<service>/<account>[@<keychain-file>]`, read from the default search list or from the one named keychain file; service and account are letters, digits, `.`, `_` and `-`, and the file is an absolute path without whitespace.
+The file holds references only, never a token.
+A token map needs `config/claude-account` or `config/claude-accounts`; a repeated account, a source outside the grammar, a blank line, or a control character refuses every Claude launch, like a malformed pool, so nothing can be selected around it.
+Beside `config/claude-account`, a line for an account that file does not declare refuses the same way.
+Beside a `config/claude-accounts` list, such a line is inert instead: every launch there names its account with `--account`, so the line can never select a credential, and an account can leave and rejoin the list while its mapping stays ready.
+An account without a line is unmapped and launches byte for byte as before.
+
+For a mapped account, [`bin/fm-claude-token.sh`](../bin/fm-claude-token.sh) loads the token into the environment of exactly one process and nothing else: the sign-in check's `claude auth status`, and then the worker itself, whose launch sheds every other ambient credential and names the root.
+The token never becomes a command argument, a launch file line, a record field, or output; the spawn reports the source as `account_token=<source>`.
+The sign-in check passes only when `claude auth status` reports `loggedIn` with `authMethod` `oauth_token`, which is what proves the launch spends the token rather than the root's stored login.
+A missing item, a locked keychain, a hung read, a malformed value, a runner that answers with another method, or a runner that rejects the token refuses the launch and names the file; the launch never falls back to the stored login or to a variable in firstmate's own environment.
+The check is offline, so it cannot tell a revoked token from a valid one; the worker's first request does.
+A relaunch resolves the map again, and `bin/fm-claude-account.sh pick` validates the map with the pool but ignores sources when choosing.
+
+Import a token with `fm-claude-token.sh store <source>` from a pipe, never from an argument; the value crosses only standard input, is verified by reading it back, and is reported as `token: readable`.
+The item must be readable, without a prompt, in the session that launches workers: the login keychain is unlocked in a GUI session and in a launchd agent of that session, while an SSH session may hold it locked, in which case the store and every launch from that session refuse with the locked reason.
+`fm-claude-token.sh check <source>` answers that question from any context without printing the value.
+Disable a mapping by commenting its line out; the next launch on that account uses its stored login again, or its declaration file when the pin has one.
+Deleting the Keychain item or revoking the token are separate, explicit operator actions, not part of disabling a mapping.
+[`bin/fm-claude-token.sh`](../bin/fm-claude-token.sh)'s header owns the exit codes and the refusal texts; [runtime backend verification](verification/runtime-backends.md#claude-token-source) records the check against the real `claude` and the real Keychain tool.
+
+The map and the [declaration file](#claude-token-source-configclaude-account-credential-sourcejson) below are two declared forms of the same thing, and one launch path serves both: the same helper, sign-in check, credential shedding, and `account_token=` report.
+When one account has both a map line and a declaration file - beside a single-line pin, or named by its `config/claude-accounts` entry - the map line wins, because it names that account explicitly and carries the richer source, while a declaration file is bound to its account only by position.
+The launch then prints a note that the declaration file was not used, and still validates it, so a malformed one refuses.
+A several-line pool refuses a declaration file beside it, because that file cannot say which line it is for; map each pool account in `config/claude-account-tokens` instead.
 
 ### Claude token source (config/claude-account-credential-source.json)
 
@@ -1730,7 +1785,7 @@ Keep `config/claude-account` as the account pin and add `config/claude-account-c
 The declaration names only the Keychain item, never its token.
 Store the long-lived OAuth token created by `claude setup-token` with `security add-generic-password -s <service> -a <account> -w`, using the declared service and account; it prompts for the token, keeps it out of arguments, and lets `security` read it back without an access dialog.
 For a local secondmate, place the same file beside its pin in `config/secondmate-accounts/<id>/`.
-This file maps the single `config/claude-account` pin.
+This file maps a single-line `config/claude-account` pin; a `config/claude-account-tokens` line for that account [takes precedence](#claude-token-source-configclaude-account-tokens).
 For pool declarations, see [several Claude accounts](#several-claude-accounts-configclaude-accounts).
 
 Before launch or relaunch, Firstmate loads the token through the shared credential-source adapter and requires `claude auth status` to report `authMethod` as `oauth_token`.
@@ -1745,8 +1800,8 @@ On relaunch with an expired token, the check passes, the running worker is stopp
 
 ### Failures, reporting, and inheritance
 
-A malformed file, a root that is not a readable directory, or a signed-out account refuses the launch and names the file to fix; Firstmate never falls back to the ambient account and never changes a global login or copies a credential.
-The spawn prints the pin as `account=` (plus `account_provider=` for Pi) and records the same fields in the task record, so the session-start digest shows which account each worker launched on.
+A malformed file, a root that is not a readable directory, a signed-out account, or a token source that cannot be loaded refuses the launch and names the file to fix; Firstmate never falls back to the ambient account and never changes a global login or copies a credential.
+The spawn prints the pin as `account=` (plus `account_provider=` for Pi, and `account_token=` for a Claude account with a token source) and records the account fields in the task record, so the session-start digest shows which account each worker launched on.
 
 Pins are not inherited into secondmate homes: the secondmate's own workers read that home's `config/claude-account` and `config/pi-account` files independently.
 A remote secondmate is launched on its host from its own home's configuration, so create the file in that remote home.
@@ -1768,7 +1823,7 @@ ordinary
 The source filename must match `claude-account-credential-source-<name>.json`, where `<name>` starts with an ASCII letter or digit and continues with ASCII letters, digits, `.`, `_`, or `-`.
 Its contents use the same [credential-source declaration schema](#claude-token-source-configclaude-account-credential-sourcejson) as a single pin.
 A final newline is optional; a blank line, relative account path, repeated account, malformed source filename, or control character other than the separator tab refuses.
-The list is opt-in: without it, every launch, including the single pin above, behaves exactly as before, and `--account` refuses.
+The list is opt-in: without it, every launch, including the single pin and the [Claude account pool](#claude-account-pool) above, behaves exactly as before, and `--account` selects only a line of `config/claude-account`.
 A home keeps either the list or `config/claude-account`, never both; with both present, every Claude launch refuses.
 
 While the list is present, every Claude ship or scout spawn must name one declared entry with `--account <entry>`.
@@ -1782,7 +1837,7 @@ The directory login and Keychain token must belong to the same account for the r
 
 The named entry passes the same refusals as a pin before anything launches: its directory must exist, a raw Claude command must not override it, and `claude auth status` must say it is signed in, with the stripped environment and credential unsetting described above.
 If its line names a source file, Firstmate validates and reads only that entry's declaration, applying the [Claude token source](#claude-token-source-configclaude-account-credential-sourcejson) checks, containment, and refusal rules.
-Entries without a source file continue to use the selected account's stored login.
+Entries without a source file use their [`config/claude-account-tokens`](#claude-token-source-configclaude-account-tokens) line when the map has one, which also takes precedence over a source file, and otherwise the selected account's stored login.
 The single-pin `config/claude-account-credential-source.json` cannot be used with the pool list.
 An undeclared, missing, or signed-out entry refuses rather than falling back to another entry or the ambient account.
 The spawn line and the task record carry the entry as `account=`.
@@ -1801,6 +1856,7 @@ Like the single pin, the list is not inherited into secondmate homes.
 To choose an account for one local secondmate's own agent, create `config/secondmate-accounts/<id>/claude-account` or `config/secondmate-accounts/<id>/pi-account` in the primary home.
 Use the secondmate's registered identifier for `<id>`.
 These private files use the same [file format and provider selection](#file-format-and-provider-selection), sign-in checks, and refusal rules as the home-wide worker pins.
+A per-secondmate `claude-account` may itself declare a [Claude account pool](#claude-account-pool), and a `claude-account-tokens` beside it is that pin's [token source](#claude-token-source-configclaude-account-tokens); the home-wide pool and token map then do not apply to that secondmate, and `bin/fm-claude-account.sh pick` reads only the home-wide pool.
 
 The matching per-secondmate file overrides the primary home's matching worker pin for that secondmate alone.
 An absent per-secondmate pin preserves the existing home-wide pin or unpinned behavior; for Claude, its [token-source declaration](#claude-token-source-configclaude-account-credential-sourcejson) must also be absent.

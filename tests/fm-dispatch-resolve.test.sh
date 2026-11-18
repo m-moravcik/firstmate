@@ -1016,6 +1016,17 @@ assert_not_contains "$out" '  profile:' "systemone transport failure never emits
 assert_absent "$LOG/quota-axi.calls" "systemone transport failure reads no quota"
 pass "systemone configuration errors, never-send base URL, partial response, and transport failure are handled"
 
+# quota-axi names the Fable window by the vendor's model id (model:fable), so a
+# profile that names the full model id must still be measured on that window.
+reset_log
+jq '.rules[2].use.model = "claude-fable-5-1"' "$BASE_RULES" > "$RULES"
+write_response "$RESPONSE" rule_3 0.95
+TYPESAFE_API_KEY=$KEY run code out err "$BRIEF"
+expect_code 0 "$code" "escalate exits 0 for a full Fable model id"
+assert_contains "$out" 'candidate: claude:claude-fable-5-1  provider=claude  scope=model:fable  remaining=15%  spendPriority=-0.79  runway=projected_exhaustion  bounds=all_models:79%/projected_exhaustion,model:fable:15%/projected_exhaustion  -> eligible' "a full claude-fable-* model id is measured on the model:fable window"
+cp "$BASE_RULES" "$RULES"
+pass "a full claude-fable-* profile model reads the model:fable window"
+
 # --- openai: Decisions API, mapped to and from the System One shape ----------
 OA_KEY='test-openai-key-never-in-child-env-or-argv'
 OA_RESPONSE="$TMP_ROOT/openai-response.json"

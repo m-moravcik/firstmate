@@ -29,8 +29,26 @@ FM_QUOTA_PROVIDER_ID_RE='^[a-z0-9]+(-[a-z0-9]+)*\z'
 #   quota_row($snapshot; $provider; $lane)
 #                                  the one provider row the candidate binds to,
 #                                  or null; schema 5 ignores $lane.
+#   quota_family_scope($provider; $model)
+#                                  the one quota-axi model scope a full model id
+#                                  is evidenced to draw on beyond its own
+#                                  `model:<id>`, or "" when none is evidenced.
+#                                  quota-axi names a Claude model window
+#                                  `model:<vendor model id>` (its README: "model-scoped
+#                                  ones (e.g. Fable) as a `model:<slug>` window"), and
+#                                  the Fable window is `model:fable`, labelled "Fable
+#                                  week", while Claude Code takes `fable` as the
+#                                  alias for the Fable family and a full name such
+#                                  as claude-fable-5-1 for one version of it
+#                                  (`claude --help`, --model). Only that family is
+#                                  mapped; a model with no evidenced scope here
+#                                  keeps its caller's all_models fallback, and
+#                                  no mapping is derived for another family.
 # shellcheck disable=SC2016,SC2034  # jq program text, not shell expansion; read by the sourcing consumers
 FM_QUOTA_ROW_JQ='
+  def quota_family_scope($provider; $model):
+    if $provider == "claude" and (($model // "") | test("^claude-fable-[0-9]")) then "model:fable"
+    else "" end;
   def quota_lane($harness; $model):
     if $harness == "codex" then "codex-home"
     elif ($harness == "pi" or $harness == "pi-signed") and (($model // "") | contains("/"))
@@ -142,6 +160,110 @@ fm_quota_json_valid() {
     )
     )
   ' >/dev/null 2>&1
+}
+
+# Claude quota readings from another process or machine.
+# Quota is per account, not per machine, but a Claude lane quota-axi cannot read
+# here (a login keychain locked to this session, or no stored login) reports a
+# non-fresh state. fm_quota_reuse_readings lets a consumer measure such a lane
+# from a recent token-free `quota-axi --provider claude --full --json` reading
+# that a refresher on this host, or another host, left in a file.
+#   FM_CLAUDE_QUOTA_READINGS          path-delimiter (:) list of reading files or
+#                                     globs; default
+#                                     $HOME/.local/state/quota-axi-refresh/*.json;
+#                                     set but empty disables reuse.
+#   FM_CLAUDE_QUOTA_READING_MAX_AGE   seconds a reading's lane refreshedAt may
+#                                     trail now; default 600.
+# Reading files hold only quota-axi's own token-free output; this code never
+# reads, prints, or stores a credential.
+
+FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE=600
+
+# fm_quota_reading_files
+# Print each existing regular file the reading list names, one per line.
+fm_quota_reading_files() {
+  (
+    local spec=${FM_CLAUDE_QUOTA_READINGS-${HOME:-}/.local/state/quota-axi-refresh/*.json}
+    local -a patterns
+    local pattern file
+    shopt -s nullglob
+    IFS=: read -r -a patterns <<< "$spec"
+    # An empty IFS keeps a space inside a path from splitting; globbing still runs.
+    IFS=
+    for pattern in "${patterns[@]}"; do
+      [ -n "$pattern" ] || continue
+      for file in $pattern; do
+        [ -f "$file" ] && printf '%s\n' "$file"
+      done
+    done
+  )
+}
+
+# fm_quota_reuse_readings
+# Reads one live quota-axi --full --json snapshot on stdin and prints it with
+# every Claude lane that is not fresh replaced by the freshest reading of the
+# same account, else unchanged. A reading lane applies only when it is `fresh`,
+# its accountLocator.path equals the live lane's, its state.refreshedAt is at
+# most the max age old (and not in the future beyond 60 s of clock skew), and,
+# when both sides carry an account identity, that identity matches: accountId
+# when both have one, else email, and differing kinds do not match. A live fresh
+# lane always wins. The replacement keeps the live lane's accountKey, accountKeys,
+# and accountLocator and adds quotaReuse {file, refreshedAt, lane} as provenance.
+# Any failure leaves the live snapshot exactly as read.
+fm_quota_reuse_readings() {
+  local live max_age=${FM_CLAUDE_QUOTA_READING_MAX_AGE:-$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE}
+  local file one readings='' merged
+  live=$(cat)
+  case "$max_age" in
+    ''|*[!0-9]*|0) max_age=$FM_CLAUDE_QUOTA_READING_DEFAULT_MAX_AGE ;;
+  esac
+  while IFS= read -r file; do
+    [ -n "$file" ] || continue
+    one=$(jq -sc --arg file "$file" '
+      if length == 1 and (.[0] | type) == "object" and (.[0].providers | type) == "array" then
+        {file: $file, lanes: [.[0].providers[] | select(type == "object" and .provider == "claude")]}
+      else empty end
+    ' "$file" 2>/dev/null) || continue
+    [ -z "$one" ] || readings="${readings:+$readings,}$one"
+  done < <(fm_quota_reading_files)
+  if [ -n "$readings" ] &&
+    merged=$(printf '%s\n' "$live" | jq -c --argjson readings "[$readings]" --argjson max "$max_age" '
+      def epoch: try (sub("\\.[0-9]+Z$"; "Z") | fromdateiso8601) catch null;
+      def identity: (.account // {}) as $a |
+        if (($a.accountId // "") | tostring | length) > 0 then ["accountId", ($a.accountId | tostring)]
+        elif (($a.email // "") | tostring | length) > 0 then ["email", ($a.email | tostring | ascii_downcase)]
+        else null end;
+      def same_account($live; $reading):
+        ($live | identity) as $l | ($reading | identity) as $r |
+        $l == null or $r == null or $l == $r;
+      def usable($lane):
+        ($lane.accountLocator.path? // "") as $path |
+        [$readings | to_entries[] | .key as $order | .value as $reading |
+          $reading.lanes[] |
+          select((.state.status? // "") == "fresh" and
+                 (.accountLocator.path? // null) == $path and
+                 same_account($lane; .)) |
+          (.state.refreshedAt? | if type == "string" then epoch else null end) as $at |
+          select($at != null and (now - $at) <= $max and (now - $at) >= -60) |
+          {lane: ., at: $at, order: $order, file: $reading.file}] |
+        sort_by([.at, -.order]) | last;
+      if (.providers | type) != "array" then .
+      else .providers |= map(
+        if type == "object" and .provider == "claude" and (.state.status? // "unknown") != "fresh" and
+           (.accountLocator.path? // "") != "" then
+          . as $live_lane | (usable($live_lane)) as $hit |
+          if $hit == null then .
+          else $hit.lane + {accountKey: $live_lane.accountKey, accountLocator: $live_lane.accountLocator} +
+            (if $live_lane | has("accountKeys") then {accountKeys: $live_lane.accountKeys} else {} end) +
+            {quotaReuse: {file: $hit.file, refreshedAt: $hit.lane.state.refreshedAt, lane: $hit.lane.accountKey}}
+          end
+        else . end)
+      end
+    ' 2>/dev/null) && printf '%s\n' "$merged" | fm_quota_json_valid; then
+    printf '%s\n' "$merged"
+  else
+    printf '%s\n' "$live"
+  fi
 }
 
 fm_quota_single_provider_table() {

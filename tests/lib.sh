@@ -747,6 +747,87 @@ SH
   chmod +x "$fakebin/$tool"
 }
 
+# fm_fake_security <fakebin> <store-dir> <calls-log>
+# A fake macOS `security` for the Claude token source tests
+# (bin/fm-claude-token.sh). Generic-password items are files under
+# <store-dir>: <service>.<account> for the default search list, or
+# <keychain-basename>@<service>.<account> for an explicit keychain file. It
+# answers with the real tool's exit codes: 44 when the item is missing, 36
+# while <store-dir>/.locked exists (a locked keychain refuses the secret
+# without interaction), and it sleeps five seconds first while
+# <store-dir>/.slow exists. `-i` reads add-generic-password lines from stdin
+# the way the real tool does. Every call is appended to <calls-log> without
+# its value.
+fm_fake_security() {
+  local fakebin=$1 store=$2 calls=$3
+  mkdir -p "$store"
+  sed -e "s|__STORE__|$store|" -e "s|__CALLS__|$calls|" > "$fakebin/security" <<'SH'
+#!/usr/bin/env bash
+set -u
+store=__STORE__
+calls=__CALLS__
+item_path() {
+  if [ -n "$3" ]; then
+    printf '%s/%s@%s.%s' "$store" "$(basename "$3")" "$1" "$2"
+  else
+    printf '%s/%s.%s' "$store" "$1" "$2"
+  fi
+}
+run_cmd() {
+  local cmd=${1:-} s= a= w=0 value= kc=
+  shift || true
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      -s) s=$2; shift 2 ;;
+      -a) a=$2; shift 2 ;;
+      -U) shift ;;
+      -w)
+        w=1
+        if [ "$cmd" = add-generic-password ]; then value=$2; shift 2; else shift; fi
+        ;;
+      *) kc=$1; shift ;;
+    esac
+  done
+  printf '%s -s %s -a %s%s\n' "$cmd" "$s" "$a" "${kc:+ $kc}" >> "$calls"
+  [ ! -f "$store/.slow" ] || sleep 5
+  case "$cmd" in
+    find-generic-password)
+      if [ ! -f "$(item_path "$s" "$a" "$kc")" ]; then
+        echo 'security: SecKeychainSearchCopyNext: The specified item could not be found in the keychain.' >&2
+        return 44
+      fi
+      if [ -f "$store/.locked" ]; then
+        echo 'security: SecKeychainSearchCopyNext: User interaction is not allowed.' >&2
+        return 36
+      fi
+      [ "$w" = 0 ] || cat "$(item_path "$s" "$a" "$kc")"
+      ;;
+    add-generic-password)
+      if [ -f "$store/.locked" ]; then
+        echo 'security: SecKeychainItemCreateFromContent: User interaction is not allowed.' >&2
+        return 36
+      fi
+      printf '%s\n' "$value" > "$(item_path "$s" "$a" "$kc")"
+      ;;
+    *)
+      echo "fake security: unsupported command '$cmd'" >&2
+      return 1
+      ;;
+  esac
+}
+if [ "${1:-}" = -i ]; then
+  rc=0
+  while IFS= read -r line; do
+    eval "set -- $line"
+    run_cmd "$@" || rc=$?
+  done
+  exit $rc
+fi
+run_cmd "$@"
+SH
+  chmod +x "$fakebin/security"
+}
+
 # fm_fake_claude_outside_read_gate <fakebin>
 # Drops a claude stub that models the 2.1.257 outside-read gate instead of
 # answering like a generic exit-0 tool: it resolves its own cwd and every

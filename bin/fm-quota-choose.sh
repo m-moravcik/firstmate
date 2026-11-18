@@ -15,6 +15,14 @@
 # candidate is printed as "<harness> <model>" and the script exits 0.
 # If no candidate is quota-eligible, it prints "none" and exits 1.
 #
+# A JSON snapshot's Claude lane that quota-axi could not read here is measured
+# from a recent reading of the same account when fm_quota_reuse_readings in
+# bin/fm-quota-axi-lib.sh accepts one (FM_CLAUDE_QUOTA_READINGS and
+# FM_CLAUDE_QUOTA_READING_MAX_AGE select the files and the age bound). A chosen
+# candidate that rests on such a reading adds a `note:` line on stderr naming
+# `via reading <file> refreshedAt <time>`; stdout is unchanged. A TOON snapshot
+# carries no lane state or locator, so it is never reused.
+#
 # Candidates are accepted as `--candidate <harness:model>` or as positional
 # colon-separated arguments, with earlier candidates preferred.
 # This script is deterministic and safe: it performs no side effects and exits
@@ -318,6 +326,7 @@ else
 fi
 
 printf '%s\n' "$QUOTA_JSON" | fm_quota_json_valid || die "invalid quota-axi provider data"
+QUOTA_JSON=$(printf '%s\n' "$QUOTA_JSON" | fm_quota_reuse_readings)
 
 # provider_for_harness <harness> [<model>]
 # The harness -> primary provider family table is owned by
@@ -336,6 +345,7 @@ effective_for_provider_model() {
   local provider=$1 model=${2:-default} lane=${3:-}
   printf '%s\n' "$QUOTA_JSON" | jq -c --arg provider "$provider" --arg model "$model" --arg lane "$lane" "$FM_QUOTA_ROW_JQ"'
     ($model | sub("^model:"; "")) as $model_token |
+    quota_family_scope($provider; $model_token) as $family |
     quota_row(.; $provider; $lane) as $p |
     if ($p // null) == null then {status: "unknown"}
     else ($p.quotaSemantics.effectiveAvailability // []) |
@@ -343,7 +353,8 @@ effective_for_provider_model() {
       $scope == "all_models" or $scope == "all_products" or
       ($model_token != "" and $model_token != "default" and
        (($scope | startswith("model:")) or ($scope | startswith("product:"))) and
-       ($model_token == ($scope | sub("^(model|product):"; ""))))
+       ($model_token == ($scope | sub("^(model|product):"; "")))) or
+      ($family != "" and $scope == $family)
     )) as $applicable |
     ($applicable | map(select(.status == "known"))) as $known |
     if ($applicable | length) == 0 then {status: "unknown"}
@@ -394,6 +405,11 @@ for c in "${CANDIDATES[@]}"; do
     end
   ' >/dev/null 2>&1; then
     chosen="$harness $model"
+    if [ "$provider" = claude ]; then
+      via=$(printf '%s\n' "$QUOTA_JSON" | jq -r --arg lane "$lane" "$FM_QUOTA_ROW_JQ"'
+        quota_row(.; "claude"; $lane).quotaReuse? // empty | "via reading \(.file) refreshedAt \(.refreshedAt)"' 2>/dev/null)
+      [ -z "$via" ] || printf 'note: %s quota measured %s\n' "$c" "$via" >&2
+    fi
     break
   fi
 done

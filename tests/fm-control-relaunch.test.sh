@@ -1047,6 +1047,39 @@ SH
   chmod +x "$1/fakebin/claude"
 }
 
+# A pinned account mapped to a Keychain token source (config/claude-account-tokens):
+# the replacement loads the token through the helper, and a source that cannot
+# be read refuses before the running agent stops.
+test_worker_account_token_source_follows_the_relaunch() {
+  local dir out rc id=rl-acct-token
+  dir=$(new_case acct-token "$id")
+  add_ship_task "$dir" "$id" claude
+  make_claude_auth_stub "$dir"
+  fm_fake_security "$dir/fakebin" "$dir/fake-keychain" "$dir/security-calls"
+  mkdir -p "$dir/home/config" "$dir/work"
+  : > "$dir/work/.credentials.json"
+  printf '%s\n' "$dir/work" > "$dir/home/config/claude-account"
+  printf '%s keychain:fm-svc/cm\n' "$dir/work" > "$dir/home/config/claude-account-tokens"
+  printf 'fm-test-not-a-secret-relaunch-token\n' > "$dir/fake-keychain/fm-svc.cm"
+  out=$(run_control "$dir" "$id" relaunch --note "token mapped"); rc=$?
+  expect_code 0 "$rc" "a relaunch on a token-mapped account should succeed"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/work" ] || fail "the relaunched record should carry the pinned account"
+  assert_contains "$(cat "$dir/fake/literal")" "/fm-claude-token.sh' exec 'keychain:fm-svc/cm' --" \
+    "the replacement should load the mapped token through the helper"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/work'" "the replacement should keep the pinned root"
+  assert_not_contains "$(cat "$dir/fake/literal")" "fm-test-not-a-secret-relaunch-token" "the launch must never carry the token itself"
+  printf '%s keychain:fm-svc/absent\n' "$dir/work" > "$dir/home/config/claude-account-tokens"
+  cp "$dir/home/state/$id.meta" "$dir/meta-before"
+  : > "$dir/fake/literal"
+  out=$(run_control "$dir" "$id" relaunch --note "token missing"); rc=$?
+  expect_code 1 "$rc" "a relaunch whose mapped token cannot be loaded must refuse"
+  assert_contains "$out" "could not be loaded" "the refusal should say the token could not be loaded"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "an unreadable token source must refuse before the running agent stops"
+  [ ! -s "$dir/fake/literal" ] || fail "an unreadable token source must refuse before any lifecycle input is sent"
+  cmp -s "$dir/meta-before" "$dir/home/state/$id.meta" || fail "a refused relaunch must leave the task record untouched"
+  pass "fm-control relaunch: a token-mapped account loads its token in the replacement and refuses before stop when the source is unreadable"
+}
+
 test_signed_out_worker_account_pin_refuses_before_stop() {
   local dir out rc id=rl-acct-out
   dir=$(new_case acct-out "$id")
@@ -1078,6 +1111,24 @@ test_worker_account_pin_follows_the_relaunch() {
   [ "$(meta_field "$dir" "$id" account)" = "$dir/work" ] || fail "the relaunched record should carry the pinned account"
   assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/work'" \
     "the replacement should launch under the pinned root"
+  mkdir -p "$dir/mon"
+  : > "$dir/mon/.credentials.json"
+  printf '%s\n' "$dir/mon" > "$dir/home/config/claude-account"
+  : > "$dir/fake/literal"
+  out=$(run_control "$dir" "$id" relaunch --note "pin changed"); rc=$?
+  expect_code 0 "$rc" "a relaunch after a single-line pin changes should follow the new pin"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/mon" ] || fail "the relaunched record should carry the changed pin"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/mon'" \
+    "the replacement should launch under the changed single-line pin, not the recorded account"
+  printf '%s\n' "$dir/work" > "$dir/home/config/claude-account"
+  printf 'zsh' > "$dir/fake/command"
+  : > "$dir/fake/literal"
+  out=$(run_spawn "$dir" "$id" --relaunch); rc=$?
+  expect_code 0 "$rc" "fm-spawn --relaunch should follow a changed single-line pin"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/work" ] || fail "fm-spawn --relaunch should record the changed pin"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/work'" \
+    "fm-spawn --relaunch should launch under the changed single-line pin"
+  printf claude > "$dir/fake/command"
   rm "$dir/home/config/claude-account"
   : > "$dir/fake/literal"
   out=$(run_control "$dir" "$id" relaunch --note "pin removed"); rc=$?
@@ -1085,7 +1136,87 @@ test_worker_account_pin_follows_the_relaunch() {
   assert_no_grep "account=" "$dir/home/state/$id.meta" "a relaunch without a pin must drop the previous account from the record"
   assert_not_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR=" \
     "an unpinned replacement must launch exactly as before"
-  pass "fm-control relaunch: the replacement follows the home's current worker account pin"
+  pass "fm-control relaunch: the replacement follows the home's current single-line worker account pin"
+}
+
+# A pool task recorded on its second account: relaunch stays there while the
+# file declares it, refuses before stopping once it does not, and moves only on
+# an explicit --account.
+test_relaunch_keeps_the_recorded_pool_account() {
+  local dir out rc id=rl-acct-pool
+  dir=$(new_case acct-pool "$id")
+  add_ship_task "$dir" "$id" claude
+  make_claude_auth_stub "$dir"
+  mkdir -p "$dir/home/config" "$dir/work" "$dir/mon" "$dir/spare"
+  : > "$dir/work/.credentials.json"
+  : > "$dir/mon/.credentials.json"
+  printf '%s\n' "$dir/work" "$dir/mon" > "$dir/home/config/claude-account"
+  printf 'account=%s\n' "$dir/mon" >> "$dir/home/state/$id.meta"
+  out=$(run_control "$dir" "$id" relaunch --note "keep the recorded account"); rc=$?
+  expect_code 0 "$rc" "a relaunch on a still-declared recorded account should succeed"$'\n'"$out"
+  assert_contains "$out" "account=$dir/mon" "the relaunch report should name the recorded account"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/mon" ] || fail "the relaunched record should keep the recorded account"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/mon'" \
+    "the replacement should launch on the recorded account, not the pool's first line"
+
+  printf '%s\n' "$dir/work" "$dir/spare" > "$dir/home/config/claude-account"
+  printf claude > "$dir/fake/command"
+  : > "$dir/fake/literal"
+  cp "$dir/home/state/$id.meta" "$dir/meta-before"
+  out=$(run_control "$dir" "$id" relaunch --note "recorded account removed"); rc=$?
+  expect_code 1 "$rc" "a relaunch whose recorded account is no longer declared must refuse"
+  assert_contains "$out" "task $id was launched on Claude account '$dir/mon', which config/claude-account no longer declares" \
+    "the refusal should name the recorded account"
+  assert_contains "$out" "relaunch with --account <entry>" "the refusal should name the deliberate switch"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "a removed recorded account must refuse before the running agent stops"
+  [ ! -s "$dir/fake/literal" ] || fail "a removed recorded account must refuse before any lifecycle input is sent"
+  cmp -s "$dir/meta-before" "$dir/home/state/$id.meta" || fail "a refused relaunch must leave the task record untouched"
+
+  printf 'zsh' > "$dir/fake/command"
+  out=$(run_spawn "$dir" "$id" --relaunch); rc=$?
+  expect_code 1 "$rc" "fm-spawn --relaunch must apply the same recorded-account rule"
+  assert_contains "$out" "which config/claude-account no longer declares" "fm-spawn --relaunch should name the removed account"
+  [ ! -s "$dir/fake/literal" ] || fail "a direct fm-spawn --relaunch must refuse before launching"
+  printf claude > "$dir/fake/command"
+
+  out=$(run_control "$dir" "$id" relaunch --account "$dir/work" --note "switch accounts"); rc=$?
+  expect_code 0 "$rc" "an explicit --account should move the task deliberately"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/work" ] || fail "the switched record should carry the explicit account"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/work'" "the replacement should launch on the explicit account"
+
+  printf '%s\n' "$dir/work" "$dir/mon" > "$dir/home/config/claude-account"
+  printf claude > "$dir/fake/command"
+  : > "$dir/fake/literal"
+  out=$(run_control "$dir" "$id" relaunch --account "$dir/other" --note "undeclared account"); rc=$?
+  expect_code 1 "$rc" "an undeclared explicit --account must refuse"
+  assert_contains "$out" "--account '$dir/other' is not declared in config/claude-account" "the refusal should name the undeclared entry"
+  [ "$(cat "$dir/fake/command")" = claude ] || fail "an undeclared --account must refuse before the running agent stops"
+  out=$(run_control "$dir" "$id" exit --account "$dir/work"); rc=$?
+  expect_code 1 "$rc" "--account applies to relaunch only"
+  pass "fm-control relaunch: a pool task keeps its recorded account, refuses once it is undeclared, and switches only on --account"
+}
+
+# A raw Claude launch command records its basename (claude-next), and a direct
+# fm-spawn --relaunch must still read that task's recorded pool account rather
+# than falling back to the pool's first line.
+test_spawn_relaunch_keeps_a_raw_claude_command_pool_account() {
+  local dir out rc id=rl-acct-raw
+  dir=$(new_case acct-raw "$id")
+  add_ship_task "$dir" "$id" claude-next
+  make_claude_auth_stub "$dir"
+  mkdir -p "$dir/home/config" "$dir/work" "$dir/mon"
+  : > "$dir/work/.credentials.json"
+  : > "$dir/mon/.credentials.json"
+  printf '%s\n' "$dir/work" "$dir/mon" > "$dir/home/config/claude-account"
+  printf 'account=%s\n' "$dir/mon" >> "$dir/home/state/$id.meta"
+  printf 'zsh' > "$dir/fake/command"
+  out=$(run_spawn "$dir" "$id" --relaunch --harness claude); rc=$?
+  expect_code 0 "$rc" "a direct relaunch of a raw claude-* task should succeed"$'\n'"$out"
+  [ "$(meta_field "$dir" "$id" account)" = "$dir/mon" ] \
+    || fail "a raw claude-* relaunch should keep the recorded account, got '$(meta_field "$dir" "$id" account)'"
+  assert_contains "$(cat "$dir/fake/literal")" "CLAUDE_CONFIG_DIR='$dir/mon'" \
+    "a raw claude-* relaunch should launch on the recorded account, not the pool's first line"
+  pass "fm-spawn --relaunch: a raw claude-* task keeps its recorded pool account"
 }
 
 # add_listed_task <case-dir> <id> <recorded-account>: a live Claude ship
@@ -3319,6 +3450,9 @@ test_account_list_relaunch_uses_recorded_entry_keychain_source
 test_account_list_relaunch_moves_only_on_explicit_account
 test_account_list_relaunch_refusals_happen_before_stop
 test_secondmate_account_pin_follows_relaunch_and_refuses_before_stop
+test_worker_account_token_source_follows_the_relaunch
+test_relaunch_keeps_the_recorded_pool_account
+test_spawn_relaunch_keeps_a_raw_claude_command_pool_account
 test_pi_exclude_tools_follow_the_relaunch
 test_claude_exclude_tools_follow_the_relaunch
 test_exclude_tools_refusals_happen_before_the_agent_stops
