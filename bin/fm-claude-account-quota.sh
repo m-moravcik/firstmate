@@ -13,6 +13,16 @@
 # a root quota-axi cannot read there, such as an `ordinary`
 # login kept in the macOS Keychain, is reported unmeasured. QUOTA_AXI_SNAPSHOT
 # is removed from each read so a fixture for one account cannot answer for all.
+# An entry that config/claude-account-tokens maps to a long-term token source is
+# measured under that token instead, because the token is what its launches
+# spend and its stored login is time-limited and may already be signed out:
+#   CLAUDE_CONFIG_DIR=<root> bin/fm-claude-token.sh exec <source> -- \
+#     quota-axi --provider claude --allow-claude-inference --json
+# A `claude setup-token` token has no usage-endpoint scope, so quota-axi reads
+# the windows from one minimal inference's rate-limit headers; the token selects
+# the measured lane, and QUOTA_AXI_CLAUDE_PROFILES is removed so no other
+# profile's lane can answer. A token that cannot be read in this session (a
+# locked Keychain) reports the account unmeasured, never its stored login.
 # An optional tab-separated token-source filename is excluded from the root
 # and output account label; see docs/configuration.md "Several Claude accounts"
 # for the relationship between a token source and the measured login.
@@ -107,11 +117,21 @@ while IFS= read -r entry; do
   root=$account
   [ "$account" != ordinary ] || root="${HOME:?HOME is required to measure the ordinary account}/.claude"
   error=
-  if fm_run_timed "$FM_CLAUDE_ACCOUNT_QUOTA_SECONDS" env -u QUOTA_AXI_SNAPSHOT CLAUDE_CONFIG_DIR="$root" \
-      quota-axi --provider claude --profile-only --json > "$WORK/snapshot.json" 2>/dev/null </dev/null; then
+  token_src=$(fm_worker_account_token_source "$CONFIG" "$account" 2>/dev/null) || token_src=
+  if [ -n "$token_src" ]; then
+    read_cmd=(env -u QUOTA_AXI_SNAPSHOT -u QUOTA_AXI_CLAUDE_PROFILES CLAUDE_CONFIG_DIR="$root"
+      "$SCRIPT_DIR/fm-claude-token.sh" exec "$token_src" --
+      quota-axi --provider claude --allow-claude-inference --json)
+    unread="quota-axi could not read this account through its long-term token ($token_src)"
+  else
+    read_cmd=(env -u QUOTA_AXI_SNAPSHOT CLAUDE_CONFIG_DIR="$root"
+      quota-axi --provider claude --profile-only --json)
+    unread="quota-axi could not read this account"
+  fi
+  if fm_run_timed "$FM_CLAUDE_ACCOUNT_QUOTA_SECONDS" "${read_cmd[@]}" > "$WORK/snapshot.json" 2>/dev/null </dev/null; then
     fm_quota_json_valid < "$WORK/snapshot.json" || error="quota-axi returned an invalid snapshot"
   elif ! fm_quota_json_valid < "$WORK/snapshot.json"; then
-    error="quota-axi could not read this account"
+    error=$unread
   fi
   if [ -n "$error" ]; then
     jq -cn --arg account "$account" --arg root "$root" --arg error "$error" '{account: $account, root: $root, error: $error}'

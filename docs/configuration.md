@@ -1856,6 +1856,7 @@ A home keeps either the list or `config/claude-account`, never both; with both p
 While the list is present, every Claude ship or scout spawn must name one declared entry with `--account <entry>`.
 Pass only the account value before the tab, without the source filename.
 Firstmate chooses that entry at dispatch intake under the [`quota-array-dispatch`](../.agents/skills/quota-array-dispatch/SKILL.md) procedure, and [`bin/fm-claude-account-quota.sh`](../bin/fm-claude-account-quota.sh) measures each entry for it by running `quota-axi --provider claude --profile-only` under that entry's own config directory (`~/.claude` for `ordinary`).
+An entry that `config/claude-account-tokens` maps to a long-term token is measured under that token instead, through `bin/fm-claude-token.sh exec` and `quota-axi --provider claude --allow-claude-inference`, because the token is what its launches spend and its stored login is time-limited; an unreadable token reports the entry unmeasured rather than reading its stored login.
 Firstmate never picks an entry by default, by file order, or from the ambient account, and never discovers, adds, or copies a login.
 
 Quota for a Keychain-sourced entry is read from that config directory's stored login.

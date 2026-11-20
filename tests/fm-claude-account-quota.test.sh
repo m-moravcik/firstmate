@@ -23,6 +23,7 @@ new_case() {
   cat > "$FAKEBIN/quota-axi" <<SH
 #!/usr/bin/env bash
 printf '%s %s %s\n' "\${CLAUDE_CONFIG_DIR-unset}" "\${QUOTA_AXI_SNAPSHOT-unset}" "\$*" >> '$CASE/reads'
+printf '%s token=%s profiles=%s\n' "\${CLAUDE_CONFIG_DIR-unset}" "\${CLAUDE_CODE_OAUTH_TOKEN:+set}" "\${QUOTA_AXI_CLAUDE_PROFILES:+set}" >> '$CASE/credentials'
 [ -f "\$CLAUDE_CONFIG_DIR/quota.json" ] || exit 1
 cat "\$CLAUDE_CONFIG_DIR/quota.json"
 [ ! -f "\$CLAUDE_CONFIG_DIR/exit-1" ] || exit 1
@@ -189,6 +190,41 @@ test_ordinary_is_measured_from_the_default_root() {
   pass "ordinary is measured from the default ~/.claude root"
 }
 
+test_token_mapped_accounts_are_measured_under_their_token() {
+  local out rc
+  new_case token
+  account "$CASE/mapped" 49 0.3
+  account "$CASE/plain" 70 0.2
+  account "$CASE/locked" 60 0.4
+  printf '%s\n' "$CASE/mapped" "$CASE/plain" "$CASE/locked" > "$HOME_DIR/config/claude-accounts"
+  printf '%s %s\n' "$CASE/mapped" keychain:fleet-oauth/mapped \
+    "$CASE/locked" keychain:fleet-oauth/locked > "$HOME_DIR/config/claude-account-tokens"
+  fm_fake_security "$FAKEBIN" "$CASE/keychain" "$CASE/security-calls"
+  printf '%s\n' fm-test-not-a-secret-token-0123456789 > "$CASE/keychain/fleet-oauth.mapped"
+  out=$(env -i HOME="$CASE/user-home" PATH="$FAKEBIN:$PATH" FM_HOME="$HOME_DIR" \
+    QUOTA_AXI_SNAPSHOT="$CASE/shared-fixture.json" QUOTA_AXI_CLAUDE_PROFILES="$CASE/plain:$CASE/locked" \
+    "$TOOL" 2>&1); rc=$?
+  expect_code 0 "$rc" "measuring token-mapped accounts should succeed: $out"
+  assert_contains "$out" "row: $CASE/mapped  root=$CASE/mapped  scope=all_models  status=known  remaining=49%  spendPriority=0.3" \
+    "a token-mapped account prints the reading taken under its token"
+  assert_grep "$CASE/mapped unset --provider claude --allow-claude-inference --json" "$CASE/reads" \
+    "a token-mapped account is read from rate-limit headers, not from its stored login"
+  assert_grep "$CASE/mapped token=set profiles=" "$CASE/credentials" \
+    "the token-mapped read carries the token and no extra profiles"
+  assert_contains "$out" "row: $CASE/plain  root=$CASE/plain  scope=all_models  status=known  remaining=70%" \
+    "an unmapped account is still measured"
+  assert_grep "$CASE/plain unset --provider claude --profile-only --json" "$CASE/reads" \
+    "an unmapped account keeps the stored-login profile read"
+  assert_grep "$CASE/plain token= profiles=set" "$CASE/credentials" \
+    "an unmapped account's read receives no token"
+  assert_contains "$out" "row: $CASE/locked  root=$CASE/locked  uncertainty: quota-axi could not read this account through its long-term token (keychain:fleet-oauth/locked)" \
+    "an unreadable token reports the account unmeasured"
+  assert_not_contains "$(cat "$CASE/reads")" "$CASE/locked " "an unreadable token never falls back to the stored login"
+  assert_not_contains "$out" fm-test-not-a-secret-token "the token never reaches the output"
+  assert_no_choice "$out"
+  pass "token-mapped accounts are measured under their own token, never their stored login"
+}
+
 test_absent_or_malformed_lists_refuse() {
   local out rc
   new_case refuse
@@ -210,6 +246,7 @@ test_exhausted_and_unreadable_accounts_print_facts
 test_projected_runway_prints_its_seconds
 test_a_rate_limited_account_names_the_vendor_reason
 test_ordinary_is_measured_from_the_default_root
+test_token_mapped_accounts_are_measured_under_their_token
 test_absent_or_malformed_lists_refuse
 
 echo "# all fm-claude-account-quota tests passed"
